@@ -25,7 +25,7 @@ const drinks = [
     id: 1,
     name: "Classic Milk Tea",
     price: 4.5,
-    img: "https://www.ohhowcivilized.com/wp-content/uploads/bubble-tea-boba-11.jpg",
+    img: "https://img.cdn4dd.com/cdn-cgi/image/fit=contain,width=1200,height=672,format=auto/https://doordash-static.s3.amazonaws.com/media/photosV2/9609f640-431d-4952-949b-be3d6e83e335-retina-large.png",
   },
   {
     id: 2,
@@ -37,13 +37,13 @@ const drinks = [
     id: 3,
     name: "Brown Sugar Boba",
     price: 5.5,
-    img: "https://images.unsplash.com/photo-1590080875832-4c1e1b1f1c5c?auto=format&fit=crop&w=500&q=80",
+    img: "https://images.squarespace-cdn.com/content/v1/61e8bb2a2cf8670534839093/d69fdde5-9e17-4d78-808c-eda5dd9f736b/Category_MilkySeries_473x416.png",
   },
   {
     id: 4,
     name: "Matcha Latte",
     price: 5.25,
-    img: "https://images.unsplash.com/photo-1613470208231-99a8f61db6d1?auto=format&fit=crop&w=500&q=80",
+    img: "https://sharetea.my/wp-content/uploads/2019/11/matcha-with-fresh-milk.jpg",
   },
 ];
 
