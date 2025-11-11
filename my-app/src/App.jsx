@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ShoppingCart, CheckCircle2, Minus, Plus, X } from "lucide-react";
+import { createPortal } from "react-dom";
+
 import { motion } from "framer-motion";
 import { fetchMenu } from "./api";
 
@@ -156,7 +158,7 @@ export default function ShareTeaKiosk() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-amber-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-amber-50 relative">
       <div className="pointer-events-none absolute inset-0 z-0">
         <div className="pointer-events-none absolute -top-32 -right-16 w-80 h-80 bg-pink-200/40 blur-[120px]" />
         <div className="pointer-events-none absolute top-40 -left-10 w-72 h-72 bg-amber-200/40 blur-[120px]" />
@@ -325,59 +327,105 @@ export default function ShareTeaKiosk() {
         )}
       </div>
 
-      {selectedDrink && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-pink-400 font-semibold">{selectedDrink.category || "Drink"}</p>
-                <h2 className="text-2xl font-bold mt-1">{selectedDrink.name}</h2>
-                <p className="text-gray-500 mt-1">${Number(selectedDrink.price || 0).toFixed(2)}</p>
-              </div>
-              <button className="text-gray-400 hover:text-gray-600" onClick={closeDrinkModal}>
-                <X />
-              </button>
-            </div>
 
-            {selectedDrink.description && <p className="text-gray-600 mt-4">{selectedDrink.description}</p>}
-
-            {toppings.length > 0 && (
-              <div className="mt-6">
-                <p className="text-sm font-semibold text-gray-700 mb-3">Add toppings</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {toppings.map((topping) => {
-                    const active = selectedToppings.some((t) => t.id === topping.id);
-                    return (
-                      <button
-                        type="button"
-                        key={topping.id}
-                        onClick={() => toggleTopping(topping)}
-                        className={`rounded-2xl border px-4 py-3 text-left transition ${
-                          active
-                            ? "border-pink-400 bg-pink-50 text-pink-600"
-                            : "border-gray-200 bg-gray-50 text-gray-700 hover:border-pink-200"
-                        }`}
-                      >
-                        <p className="font-semibold">{topping.name}</p>
-                        <p className="text-sm text-gray-500">{topping.price ? `+$${Number(topping.price).toFixed(2)}` : "Included"}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div className="mt-8 flex gap-3">
-              <Button className="flex-1 bg-gray-200 text-gray-700 hover:bg-gray-300" onClick={closeDrinkModal}>
-                Cancel
-              </Button>
-              <Button className="flex-1" onClick={addSelectionToCart}>
-                Add to Cart
-              </Button>
-            </div>
-          </motion.div>
+      {selectedDrink &&
+  createPortal(
+    <div
+      className="
+        fixed top-0 left-0 w-screen h-screen 
+        z-[2147483647] 
+        flex items-center justify-center 
+        bg-black/40 backdrop-blur-sm
+        pointer-events-auto
+      "
+      onClick={closeDrinkModal}  /* clicking backdrop closes */
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        onClick={(e) => e.stopPropagation()} /* prevent backdrop click */
+        className="
+          w-full max-w-lg 
+          bg-white 
+          rounded-3xl 
+          shadow-2xl 
+          p-6 
+          pointer-events-auto
+        "
+      >
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-pink-400 font-semibold">
+              {selectedDrink.category || "Drink"}
+            </p>
+            <h2 className="text-2xl font-bold mt-1">{selectedDrink.name}</h2>
+            <p className="text-gray-500 mt-1">
+              ${Number(selectedDrink.price || 0).toFixed(2)}
+            </p>
+          </div>
+          <button
+            className="text-gray-400 hover:text-gray-600"
+            onClick={closeDrinkModal}
+          >
+            <X />
+          </button>
         </div>
-      )}
+
+        {selectedDrink.description && (
+          <p className="text-gray-600 mt-4">{selectedDrink.description}</p>
+        )}
+
+        {toppings.length > 0 && (
+          <div className="mt-6">
+            <p className="text-sm font-semibold text-gray-700 mb-3">
+              Add toppings
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {toppings.map((topping) => {
+                const active = selectedToppings.some((t) => t.id === topping.id);
+                return (
+                  <button
+                    key={topping.id}
+                    onClick={() => toggleTopping(topping)}
+                    className={`
+                      rounded-2xl border px-4 py-3 text-left transition 
+                      ${active
+                        ? "border-pink-400 bg-pink-50 text-pink-600"
+                        : "border-gray-200 bg-gray-50 text-gray-700 hover:border-pink-200"
+                      }
+                    `}
+                  >
+                    <p className="font-semibold">{topping.name}</p>
+                    <p className="text-sm text-gray-500">
+                      {topping.price
+                        ? `+$${Number(topping.price).toFixed(2)}`
+                        : "Included"}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-8 flex gap-3">
+          <Button
+            className="flex-1 bg-gray-200 text-gray-700 hover:bg-gray-300"
+            onClick={closeDrinkModal}
+          >
+            Cancel
+          </Button>
+          <Button className="flex-1" onClick={addSelectionToCart}>
+            Add to Cart
+          </Button>
+        </div>
+      </motion.div>
+    </div>,
+    document.body
+  )
+}
+
+
     </div>
   );
 }
