@@ -2,41 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  #root {
+    isolation: isolate;
+  }
 
-#root {
-  isolation: isolate;
-}
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 
-/* Reset base page styling (Tailwind-friendly) */
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  min-height: 100%;
-  overflow-x: hidden;
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+  button {
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
 
-
-
-
-/* Optional nicer link styling */
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-/* Buttons reset — Tailwind will override as needed */
-button {
-  cursor: pointer;
-  background: none;
-  border: none;
-}
-
-/* Optional: prevent text selection glitches on modals */
-* {
-  -webkit-tap-highlight-color: transparent;
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
