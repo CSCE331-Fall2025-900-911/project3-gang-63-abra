@@ -1,0 +1,46 @@
+SCRUM Meeting 3 – Project3-Gang-63-ABRA
+Prepared by: Prisha Sharma
+Meeting Date: 11/07/25
+
+Meeting Attendees:
+- Zaheer Sufi
+- Mason Nguyen
+- Prisha Sharma
+- Athul Mohanram
+
+Meeting Agenda Items:
+- Discuss what the most pressing issues that need to be done before the sprint finishes
+- Talk about what will likely need to be finished in the next sprint
+
+Status Update Since Last Meeting:
+Accomplishments:
+- Backend was correctly integrated into the frontend with menu items from the database displaying on the customer kiosk
+- Items were able to be added to the cart with toppings
+
+Tasks Completed:
++---------------------------------------------+-----------------+-------------+
+| Task Description                             | Assigned To     | Completed?  |
++---------------------------------------------+-----------------+-------------+
+| Add a way for users to add items to cart with toppings | Mason Nguyen   | Yes        |
+| Integrating backend into the frontend        | Zaheer Sufi     | Yes         |
+| Implement Google Authentication              | Prisha Sharma   | No          |
+| Implement Weather API                         | Athul Mohanram  | No          |
++---------------------------------------------+-----------------+-------------+
+
+Before The Next Meeting:
+Plans:
+- Work on deployment for the backend and being able to submit orders properly
+- Continue working on implementing Google Authentication and Weather API
+
+Task Assignments:
++---------------------------------------------+-----------------+
+| Task Description                             | Assigned To     |
++---------------------------------------------+-----------------+
+| Deployment for the backend                   | Zaheer Sufi     |
+| Submit orders through the customer kiosk     | Mason Nguyen    |
+| Implement Google Authentication              | Prisha Sharma   |
+| Implement Weather API feature                | Athul Mohanram  |
++---------------------------------------------+-----------------+
+
+Minutes from Previous Meeting:
+In the previous meeting, the team focused on implementing key features identified in Sprint 1. Tasks were assigned to integrate Google Authentication, the Weather API, and the backend with the frontend, as well as to add basic kiosk functionality including a cart system. Updates were shared on progress for each task, and the team discussed plans for the next steps, including how the frontend should interact with the backend and completing feature research. Potential roadblocks were reviewed to ensure tasks could proceed smoothly in the upcoming sprint.

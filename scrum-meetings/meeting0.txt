@@ -1,0 +1,44 @@
+SCRUM Meeting 1 – Project3-Gang-63-ABRA
+Prepared by: Zaheer Sufi
+Meeting Date: 10/30/25
+
+Meeting Attendees:
+- Zaheer Sufi
+- Mason Nguyen
+- Prisha Sharma
+- Athul Mohanram
+
+Meeting Agenda Items:
+- Assign stories to individual people
+- Discuss any potential roadblocks that could hinder progress
+
+Status Update Since Last Meeting:
+Accomplishments:
+- Created the product backlog for the project
+- Assigned points to the most pressing issues
+
+Tasks Completed:
++--------------------------------------+-----------------+-------------+
+| Task Description                      | Assigned To     | Completed?  |
++--------------------------------------+-----------------+-------------+
+| Create product backlog                | Everyone        | Yes         |
+| Assign points to stories              | Everyone        | Yes         |
++--------------------------------------+-----------------+-------------+
+
+Before The Next Meeting:
+Plans:
+- Begin research and initial development tasks for assigned features
+- Prepare updates on technical stuff and prototype progress
+
+Task Assignments:
++--------------------------------------+-----------------+
+| Task Description                      | Assigned To     |
++--------------------------------------+-----------------+
+| Research Google Authentication        | Prisha Sharma  |
+| Research Weather API                  | Athul Mohanram |
+| Create basic layout for customer kiosk| Mason Nguyen   |
+| Create backend to access database     | Zaheer Sufi    |
++--------------------------------------+-----------------+
+
+Minutes from Previous Meeting:
+During the previous meeting, the team established the foundation for the Sharetea customer kiosk project. The group discussed the overall project goals, including creating an interactive ordering system to improve customer experience and streamline store operations. The team collaborated to create the initial product backlog, identifying core features such as the menu interface, order customization, payment integration, and database connectivity. After reviewing each item, the group assigned story points to prioritize key tasks for the first development sprint. Roles and early technical research areas were also outlined to prepare for implementation.

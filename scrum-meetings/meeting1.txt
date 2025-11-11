@@ -1,0 +1,46 @@
+SCRUM Meeting 2 – Project3-Gang-63-ABRA
+Prepared by: Mason Nguyen
+Meeting Date: 11/03/25
+
+Meeting Attendees:
+- Zaheer Sufi
+- Mason Nguyen
+- Prisha Sharma
+- Athul Mohanram
+
+Meeting Agenda Items:
+- Discuss progress since last meeting
+- Assign new stories when needed
+
+Status Update Since Last Meeting:
+Accomplishments:
+- Research for Google Authentication and for the Weather API was completed
+- Basic functionality for the customer kiosk was created along with a way to access the database through the backend
+
+Tasks Completed:
++---------------------------------------------+-----------------+-------------+
+| Task Description                             | Assigned To     | Completed?  |
++---------------------------------------------+-----------------+-------------+
+| Research Google Authentication               | Prisha Sharma   | Yes         |
+| Research Weather API                          | Athul Mohanram  | Yes         |
+| Create basic layout for customer kiosk       | Mason Nguyen    | Yes         |
+| Create backend to access database            | Zaheer Sufi     | Yes         |
++---------------------------------------------+-----------------+-------------+
+
+Before The Next Meeting:
+Plans:
+- Work on implementing features that access Google Authentication and the Weather API
+- Implement a way for the frontend to interact with the backend and work on basic functionality for the customer kiosk
+
+Task Assignments:
++---------------------------------------------+-----------------+
+| Task Description                             | Assigned To     |
++---------------------------------------------+-----------------+
+| Implement Google Authentication              | Prisha Sharma   |
+| Implement Weather API                         | Athul Mohanram  |
+| Add a way for users to add items to cart with toppings | Mason Nguyen |
+| Integrating backend into the frontend        | Zaheer Sufi     |
++---------------------------------------------+-----------------+
+
+Minutes from Previous Meeting:
+During the previous meeting, the team focused on laying the groundwork for the Sharetea customer kiosk project. The discussion centered on defining the product backlog, prioritizing key features, and assigning story points to tasks. Team members were assigned research and development tasks, including exploring Google Authentication, integrating a Weather API, creating a basic layout for the kiosk, and setting up backend database access. The team also discussed potential challenges and dependencies to ensure smooth progress for the initial sprint.
