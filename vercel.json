@@ -1,0 +1,18 @@
+{
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.11",
+      "maxDuration": 10
+    }
+  },
+  "env": {
+    "ROLLUP_SKIP_NODEJS_NATIVE": "true",
+    "NPM_CONFIG_OPTIONAL": "false"
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "api/index.py"
+    }
+  ]
+}
