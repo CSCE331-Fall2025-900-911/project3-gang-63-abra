@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ShoppingCart, CheckCircle2, Minus, Plus, X } from "lucide-react";
-import { createPortal } from "react-dom";
+import { ShoppingCart, CheckCircle2, Check, Minus, Plus, X } from "lucide-react";
 
 import { motion } from "framer-motion";
 import { fetchMenu } from "./api";
@@ -120,14 +119,16 @@ export default function ShareTeaKiosk() {
   const total = cart.reduce((sum, item) => sum + perItemTotal(item) * item.qty, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.qty, 0);
 
-  const openDrinkModal = (drink) => {
+  const startCustomization = (drink) => {
     setSelectedDrink(drink);
     setSelectedToppings([]);
+    setPhase("customizing");
   };
 
-  const closeDrinkModal = () => {
+  const closeCustomizer = () => {
     setSelectedDrink(null);
     setSelectedToppings([]);
+    setPhase("browsing");
   };
 
   const toggleTopping = (topping) => {
@@ -141,7 +142,7 @@ export default function ShareTeaKiosk() {
   const addSelectionToCart = () => {
     if (!selectedDrink) return;
     addToCart(selectedDrink, selectedToppings);
-    closeDrinkModal();
+    closeCustomizer();
   };
 
   if (phase === "confirmed") {
@@ -164,7 +165,15 @@ export default function ShareTeaKiosk() {
         <div className="pointer-events-none absolute top-40 -left-10 w-72 h-72 bg-amber-200/40 blur-[120px]" />
       </div>
 
-      <div className="relative z-10 w-full px-6 py-12 lg:px-12">
+      <div
+        className="relative z-10 w-full px-6 py-12 lg:px-16"
+        style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+          paddingBlock: "clamp(32px, 6vw, 96px)",
+          paddingInline: "clamp(24px, 5vw, 72px)",
+        }}
+      >
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-8 mb-12">
           <div className="space-y-4">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-pink-500 shadow">
@@ -236,11 +245,11 @@ export default function ShareTeaKiosk() {
                       key={item.id}
                       role="button"
                       tabIndex={0}
-                      onClick={() => openDrinkModal(item)}
+                      onClick={() => startCustomization(item)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
-                          openDrinkModal(item);
+                          startCustomization(item);
                         }
                       }}
                       className="relative h-full overflow-hidden border border-white/60 bg-white/80 shadow-lg backdrop-blur rounded-3xl transition duration-300 hover:-translate-y-2 hover:shadow-2xl cursor-pointer"
@@ -325,107 +334,108 @@ export default function ShareTeaKiosk() {
             </div>
           </motion.div>
         )}
-      </div>
-
-
-      {selectedDrink &&
-  createPortal(
-    <div
-      className="
-        fixed top-0 left-0 w-screen h-screen 
-        z-[2147483647] 
-        flex items-center justify-center 
-        bg-black/40 backdrop-blur-sm
-        pointer-events-auto
-      "
-      onClick={closeDrinkModal}  /* clicking backdrop closes */
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        onClick={(e) => e.stopPropagation()} /* prevent backdrop click */
-        className="
-          w-full max-w-lg 
-          bg-white 
-          rounded-3xl 
-          shadow-2xl 
-          p-6 
-          pointer-events-auto
-        "
-      >
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-pink-400 font-semibold">
-              {selectedDrink.category || "Drink"}
-            </p>
-            <h2 className="text-2xl font-bold mt-1">{selectedDrink.name}</h2>
-            <p className="text-gray-500 mt-1">
-              ${Number(selectedDrink.price || 0).toFixed(2)}
-            </p>
-          </div>
-          <button
-            className="text-gray-400 hover:text-gray-600"
-            onClick={closeDrinkModal}
+        {phase === "customizing" && selectedDrink && (
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white shadow-xl mt-10 border border-slate-200 p-10 space-y-8"
           >
-            <X />
-          </button>
-        </div>
-
-        {selectedDrink.description && (
-          <p className="text-gray-600 mt-4">{selectedDrink.description}</p>
-        )}
-
-        {toppings.length > 0 && (
-          <div className="mt-6">
-            <p className="text-sm font-semibold text-gray-700 mb-3">
-              Add toppings
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              {toppings.map((topping) => {
-                const active = selectedToppings.some((t) => t.id === topping.id);
-                return (
-                  <button
-                    key={topping.id}
-                    onClick={() => toggleTopping(topping)}
-                    className={`
-                      rounded-2xl border px-4 py-3 text-left transition 
-                      ${active
-                        ? "border-pink-400 bg-pink-50 text-pink-600"
-                        : "border-gray-200 bg-gray-50 text-gray-700 hover:border-pink-200"
-                      }
-                    `}
-                  >
-                    <p className="font-semibold">{topping.name}</p>
-                    <p className="text-sm text-gray-500">
-                      {topping.price
-                        ? `+$${Number(topping.price).toFixed(2)}`
-                        : "Included"}
-                    </p>
-                  </button>
-                );
-              })}
+            <div className="flex flex-wrap items-start justify-between gap-6">
+              <div className="flex-1 min-w-[240px] space-y-2">
+                <p className="text-xs uppercase tracking-[0.4em] text-pink-500 font-semibold">
+                  {selectedDrink.category || "Drink"}
+                </p>
+                <h2 className="text-3xl font-bold text-slate-900">{selectedDrink.name}</h2>
+                <p className="text-lg text-gray-500">
+                  ${Number(selectedDrink.price || 0).toFixed(2)}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button className="bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-none" onClick={closeCustomizer}>
+                  Back
+                </Button>
+                <button className="text-gray-400 hover:text-gray-600 p-2" onClick={closeCustomizer} aria-label="Close customizer">
+                  <X />
+                </button>
+              </div>
             </div>
-          </div>
+
+            {selectedDrink.description && (
+              <p className="text-base leading-relaxed text-gray-600">{selectedDrink.description}</p>
+            )}
+
+            {toppings.length > 0 && (
+              <section className="space-y-5">
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm font-semibold text-gray-700">Add toppings</p>
+                  <p className="text-xs text-gray-400">Tap any topping to toggle it. Active toppings get a checkmark and appear below.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {toppings.map((topping) => {
+                    const active = selectedToppings.some((t) => t.id === topping.id);
+                    return (
+                      <button
+                        key={topping.id}
+                        onClick={() => toggleTopping(topping)}
+                        aria-pressed={active}
+                        className={`
+                          group border-2 px-5 py-4 text-left transition 
+                          ${active
+                            ? "border-pink-500 bg-pink-50 text-pink-600 shadow-[0_0_0_2px_rgba(236,72,153,0.2)]"
+                            : "border-slate-200 bg-white hover:border-pink-200"
+                          }
+                        `}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-base">{topping.name}</p>
+                            <p className="text-sm text-gray-500">
+                              {topping.price ? `+$${Number(topping.price).toFixed(2)}` : "Included"}
+                            </p>
+                          </div>
+                          {active && (
+                            <span className="inline-flex items-center gap-1 text-pink-500 text-sm font-semibold">
+                              <Check className="w-4 h-4" />
+                              Added
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="pt-2">
+                  <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Selected toppings</p>
+                  {selectedToppings.length ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selectedToppings.map((topping) => (
+                        <span
+                          key={topping.id}
+                          className="px-3 py-1 border border-pink-400 text-pink-600 text-xs font-semibold uppercase tracking-wide"
+                        >
+                          {topping.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-gray-400">No toppings selected yet.</p>
+                  )}
+                </div>
+              </section>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-100">
+              <Button className="flex-1 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-none" onClick={closeCustomizer}>
+                Cancel
+              </Button>
+              <Button className="flex-1 rounded-none" onClick={addSelectionToCart}>
+                Add to Cart
+              </Button>
+            </div>
+          </motion.div>
         )}
-
-        <div className="mt-8 flex gap-3">
-          <Button
-            className="flex-1 bg-gray-200 text-gray-700 hover:bg-gray-300"
-            onClick={closeDrinkModal}
-          >
-            Cancel
-          </Button>
-          <Button className="flex-1" onClick={addSelectionToCart}>
-            Add to Cart
-          </Button>
-        </div>
-      </motion.div>
-    </div>,
-    document.body
-  )
-}
-
-
+      </div>
     </div>
   );
 }
