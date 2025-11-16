@@ -1,9 +1,6 @@
 import React from 'react';
 // Styles are now in App.css
 
-/**
- * This is the dedicated Login Page component.
- */
 function LoginPage({ onLoginSuccess }) {
   /**
    * This is your event handler function.
@@ -12,8 +9,7 @@ function LoginPage({ onLoginSuccess }) {
   const handleGoogleLogin = () => {
     // This URL MUST match the endpoint 
     // Confirm with him that his backend is running on port 8000.
-    window.location.href = 'http://localhost:8000/auth/google';
-    
+    window.location.href = 'http://localhost:8000/manager';
     // In a real app, the backend would redirect back,
     // and you'd call onLoginSuccess() after getting confirmation.
     // For now, you can uncomment this to test the navigation:
