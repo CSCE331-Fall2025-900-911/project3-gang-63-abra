@@ -13,6 +13,14 @@
     {
       "src": "/api/(.*)",
       "dest": "api/index.py"
+    },
+    {
+      "src": "/employee",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
