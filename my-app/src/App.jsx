@@ -32,6 +32,11 @@ const FALLBACK_ITEMS = [
   { id: 4, name: "Matcha Latte", price: 5.25, category: "Latte", isTopping: false },
   { id: "t1", name: "Honey Boba", price: 0.75, category: "Toppings", isTopping: true },
   { id: "t2", name: "Crystal Jelly", price: 0.65, category: "Toppings", isTopping: true },
+  /*Potential added options for toppings
+  { id: "t3", name: "Strawberry Jelly", price: 0.65, category: "Toppings", isTopping: true },
+  { id: "t4", name: "Popping Boba", price: 0.85, category: "Toppings", isTopping: true },
+  { id: "t5", name: "Regular Boba", price: 0.5, category: "Toppings", isTopping: true },
+  */  
 ];
 
 export default function ShareTeaKiosk() {
