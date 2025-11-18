@@ -1,13 +1,14 @@
 {
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "functions": {
     "api/index.py": {
-      "runtime": "python3.11",
-      "maxDuration": 10
+      "runtime": "python3.11"
     }
   },
   "env": {
-    "ROLLUP_SKIP_NODEJS_NATIVE": "true",
-    "NPM_CONFIG_OPTIONAL": "false"
+    "NPM_CONFIG_OPTIONAL": "false",
+    "ROLLUP_SKIP_NODEJS_NATIVE": "true"
   },
   "routes": [
     {
