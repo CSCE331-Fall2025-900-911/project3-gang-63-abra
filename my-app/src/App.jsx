@@ -439,5 +439,3 @@ export default function ShareTeaKiosk() {
     </div>
   );
 }
-
-export default App;
