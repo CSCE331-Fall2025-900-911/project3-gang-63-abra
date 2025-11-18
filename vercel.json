@@ -14,6 +14,5 @@
       "src": "/api/(.*)",
       "dest": "api/index.py"
     }
-  ],
-  "rootDirectory": "my-app"
+  ]
 }
