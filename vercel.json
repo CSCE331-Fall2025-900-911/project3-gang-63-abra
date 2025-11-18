@@ -6,14 +6,11 @@
       "runtime": "python3.11"
     }
   },
-  "env": {
-    "NPM_CONFIG_OPTIONAL": "false",
-    "ROLLUP_SKIP_NODEJS_NATIVE": "true"
-  },
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "api/index.py"
-    }
-  ]
+    { "src": "/api/(.*)", "dest": "api/index.py" }
+  ],
+  "env": {
+    "ROLLUP_SKIP_NODEJS_NATIVE": "true",
+    "NPM_CONFIG_OPTIONAL": "false"
+  }
 }
