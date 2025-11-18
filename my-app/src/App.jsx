@@ -165,6 +165,29 @@ export default function ShareTeaKiosk() {
         <div className="pointer-events-none absolute top-40 -left-10 w-72 h-72 bg-amber-200/40 blur-[120px]" />
       </div>
 
+      {/* --- ACCESSIBILITY PLACEHOLDER BUTTONS --- */}
+      <div className="absolute top-4 right-4 z-20 flex gap-2">
+        <button
+          title="Language (Coming Soon)"
+          className="bg-white/80 backdrop-blur border border-white/50 rounded-full w-12 h-12 flex items-center justify-center text-sm font-semibold text-slate-700 shadow-md hover:shadow-lg transition"
+        >
+          Eng
+        </button>
+        <button
+          title="High Contrast (Coming Soon)"
+          className="bg-white/80 backdrop-blur border border-white/50 rounded-full w-12 h-12 flex items-center justify-center text-xl font-semibold text-slate-700 shadow-md hover:shadow-lg transition"
+        >
+          ⚫
+        </button>
+        <button
+          title="Text Size (Coming Soon)"
+          className="bg-white/80 backdrop-blur border border-white/50 rounded-full w-12 h-12 flex items-center justify-center text-lg font-semibold text-slate-700 shadow-md hover:shadow-lg transition"
+        >
+          Aa
+        </button>
+      </div>
+      {/* ----------------------------------------- */}
+
       <div
         className="relative z-10 w-full px-6 py-12 lg:px-16"
         style={{
