@@ -24,6 +24,11 @@
     text-decoration: none;
   }
 
+  
+  a:hover {
+    color: #747bff;
+  }
+  
   button {
     cursor: pointer;
     background: none;
