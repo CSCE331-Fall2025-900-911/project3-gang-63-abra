@@ -2,6 +2,13 @@
 
 A React kiosk interface backed by a lightweight Flask API that serves menu data from the CSCE 315 Postgres instance.
 
+# IF CANNOT RUN LOCALLY
+
+delete package-lock.json in my-app and node_modules in my-app
+then run npm install in my-app (and pray)
+
+DO NOT REMOVE ANYTHING FROM PACKAGE.JSON OR UPGRADE ANYTHING
+
 ## Prerequisites
 
 - Node.js 18+ for the Vite frontend
