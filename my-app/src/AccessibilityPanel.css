@@ -20,6 +20,7 @@
   right: 20px;
   z-index: 9999;
   font-family: inherit;
+  zoom: 1 !important;
 }
 
 /* Accessibility Toggle Button */
@@ -40,6 +41,7 @@
   padding: 0;
   min-height: 50px;
   min-width: 50px;
+  zoom: 1 !important;
 }
 
 .accessibility-toggle:hover {
@@ -70,6 +72,7 @@
   max-width: 320px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
   animation: slideUp 0.3s ease;
+  zoom: 1 !important;
 }
 
 @keyframes slideUp {
@@ -284,6 +287,156 @@ body.high-contrast-mode .toggle-button {
 }
 
 body.high-contrast-mode .toggle-button.active {
+  background-color: #000 !important;
+  color: #ffff00 !important;
+}
+
+/* Magnification Controls */
+.magnification-controls {
+  margin-bottom: 12px;
+}
+
+.magnification-label {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.magnification-icon {
+  margin-right: 8px;
+  font-size: 16px;
+  display: inline-block;
+}
+
+.magnification-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.magnification-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #ddd;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.magnification-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #0066cc;
+  cursor: pointer;
+  border: 2px solid #003d99;
+  transition: all 0.2s ease;
+}
+
+.magnification-slider::-webkit-slider-thumb:hover {
+  background: #0052a3;
+  box-shadow: 0 0 8px rgba(0, 102, 204, 0.5);
+}
+
+.magnification-slider::-webkit-slider-thumb:focus {
+  outline: 3px solid #ffb81c;
+  outline-offset: 2px;
+}
+
+.magnification-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #0066cc;
+  cursor: pointer;
+  border: 2px solid #003d99;
+  transition: all 0.2s ease;
+}
+
+.magnification-slider::-moz-range-thumb:hover {
+  background: #0052a3;
+  box-shadow: 0 0 8px rgba(0, 102, 204, 0.5);
+}
+
+.magnification-slider::-moz-range-thumb:focus {
+  outline: 3px solid #ffb81c;
+  outline-offset: 2px;
+}
+
+.magnification-slider:focus {
+  outline: none;
+}
+
+.magnification-btn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  border: 2px solid #0066cc;
+  border-radius: 4px;
+  background-color: #f0f4ff;
+  color: #0066cc;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.magnification-btn:hover:not(:disabled) {
+  background-color: #0066cc;
+  color: white;
+}
+
+.magnification-btn:focus {
+  outline: 3px solid #ffb81c;
+  outline-offset: 2px;
+}
+
+.magnification-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.magnification-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* High Contrast Mode - Magnification Styles */
+body.high-contrast-mode .magnification-slider {
+  background: #000 !important;
+}
+
+body.high-contrast-mode .magnification-slider::-webkit-slider-thumb {
+  background: #ffff00 !important;
+  border: 2px solid #000 !important;
+}
+
+body.high-contrast-mode .magnification-slider::-moz-range-thumb {
+  background: #ffff00 !important;
+  border: 2px solid #000 !important;
+}
+
+body.high-contrast-mode .magnification-label {
+  color: #000 !important;
+}
+
+body.high-contrast-mode .magnification-btn {
+  background-color: #ffff00 !important;
+  color: #000 !important;
+  border: 2px solid #000 !important;
+}
+
+body.high-contrast-mode .magnification-btn:hover:not(:disabled) {
   background-color: #000 !important;
   color: #ffff00 !important;
 }
