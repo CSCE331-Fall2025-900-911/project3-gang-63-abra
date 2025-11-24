@@ -4,14 +4,21 @@ import './AccessibilityPanel.css';
 function AccessibilityPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [contrastMode, setContrastMode] = useState('normal');
+  const [magnification, setMagnification] = useState(100);
 
   // Load preferences from localStorage on mount
   useEffect(() => {
     const savedContrast = localStorage.getItem('a11y-contrast');
+    const savedMagnification = localStorage.getItem('a11y-magnification');
     
     if (savedContrast) {
       setContrastMode(savedContrast);
       applyContrastMode(savedContrast);
+    }
+    if (savedMagnification) {
+      const mag = parseInt(savedMagnification);
+      setMagnification(mag);
+      applyMagnification(mag);
     }
   }, []);
 
@@ -29,16 +36,67 @@ function AccessibilityPanel() {
     localStorage.setItem('a11y-contrast', mode);
   };
 
+  const applyMagnification = (level) => {
+    const root = document.documentElement;
+    // Create or get the app container content wrapper
+    let contentWrapper = document.getElementById('app-content-wrapper');
+    
+    if (!contentWrapper) {
+      // If wrapper doesn't exist, find the app container and wrap its children
+      const appContainer = document.querySelector('.app-container');
+      if (appContainer && !appContainer.querySelector('#app-content-wrapper')) {
+        contentWrapper = document.createElement('div');
+        contentWrapper.id = 'app-content-wrapper';
+        
+        // Move all children except accessibility panel to the wrapper
+        const children = Array.from(appContainer.children);
+        children.forEach(child => {
+          if (!child.classList.contains('accessibility-panel')) {
+            contentWrapper.appendChild(child);
+          }
+        });
+        appContainer.appendChild(contentWrapper);
+      }
+    }
+    
+    if (contentWrapper) {
+      contentWrapper.style.zoom = (level) + '%';
+    }
+    
+    localStorage.setItem('a11y-magnification', level.toString());
+  };
+
   const handleContrastToggle = () => {
     const newMode = contrastMode === 'normal' ? 'high' : 'normal';
     setContrastMode(newMode);
     applyContrastMode(newMode);
   };
 
+  const handleMagnificationChange = (e) => {
+    const newLevel = parseInt(e.target.value);
+    setMagnification(newLevel);
+    applyMagnification(newLevel);
+  };
+
+  const increaseMagnification = () => {
+    const newLevel = Math.min(magnification + 10, 200);
+    setMagnification(newLevel);
+    applyMagnification(newLevel);
+  };
+
+  const decreaseMagnification = () => {
+    const newLevel = Math.max(magnification - 10, 100);
+    setMagnification(newLevel);
+    applyMagnification(newLevel);
+  };
+
   const resetAll = () => {
     setContrastMode('normal');
+    setMagnification(100);
     applyContrastMode('normal');
+    applyMagnification(100);
     localStorage.removeItem('a11y-contrast');
+    localStorage.removeItem('a11y-magnification');
   };
 
   return (
@@ -78,6 +136,49 @@ function AccessibilityPanel() {
               {contrastMode === 'high' ? 'High Contrast: ON' : 'High Contrast: OFF'}
             </button>
             <p className="option-description">Increase contrast for easier reading</p>
+          </div>
+
+          {/* Screen Magnifier */}
+          <div className="accessibility-option">
+            <div className="magnification-controls">
+              <label htmlFor="magnification-slider" className="magnification-label">
+                <span className="magnification-icon"></span>
+                Screen Magnifier: {magnification}%
+              </label>
+              <div className="magnification-buttons">
+                <button
+                  className="magnification-btn"
+                  onClick={decreaseMagnification}
+                  aria-label="Decrease magnification"
+                  disabled={magnification <= 100}
+                  title="Decrease zoom level"
+                >
+                  −
+                </button>
+                <input
+                  id="magnification-slider"
+                  type="range"
+                  min="100"
+                  max="200"
+                  step="10"
+                  value={magnification}
+                  onChange={handleMagnificationChange}
+                  aria-label="Magnification level slider"
+                  title={`Current magnification: ${magnification}%`}
+                  className="magnification-slider"
+                />
+                <button
+                  className="magnification-btn"
+                  onClick={increaseMagnification}
+                  aria-label="Increase magnification"
+                  disabled={magnification >= 200}
+                  title="Increase zoom level"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <p className="option-description">Magnify the entire page (100% - 200%)</p>
           </div>
 
           {/* Reset Button */}
