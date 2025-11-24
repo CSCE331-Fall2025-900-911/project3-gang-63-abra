@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import CustomerKiosk from './CustomerKiosk.jsx'; // Import the kiosk
 import LoginPage from './loginPage.jsx';       // Import the login page
 import ManagerPage from './ManagerPage.jsx';   // Import the manager page
+import AccessibilityPanel from './AccessibilityPanel.jsx'; // Import accessibility panel
 import './App.css'; // This file will now hold styles for all components
 
 function App() {
@@ -64,6 +65,7 @@ function App() {
     <div className="app-container">
       <Navigation />
       {renderCurrentPage()}
+      <AccessibilityPanel />
     </div>
   );
 }

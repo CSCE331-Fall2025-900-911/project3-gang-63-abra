@@ -1,0 +1,329 @@
+/* Accessibility Panel Styles - WCAG 2.1 Level AA Compliant */
+
+/* Screen Reader Only Text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Main Accessibility Panel Container */
+.accessibility-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  font-family: inherit;
+}
+
+/* Accessibility Toggle Button */
+.accessibility-toggle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #0066cc;
+  color: white;
+  border: 3px solid #003d99;
+  cursor: pointer;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  padding: 0;
+  min-height: 50px;
+  min-width: 50px;
+}
+
+.accessibility-toggle:hover {
+  background-color: #0052a3;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  transform: scale(1.1);
+}
+
+.accessibility-toggle:focus {
+  outline: 3px solid #ffb81c;
+  outline-offset: 2px;
+}
+
+.accessibility-toggle:active {
+  transform: scale(0.95);
+}
+
+/* Accessibility Menu */
+.accessibility-menu {
+  position: absolute;
+  bottom: 70px;
+  right: 0;
+  background-color: #ffffff;
+  border: 2px solid #0066cc;
+  border-radius: 8px;
+  padding: 20px;
+  min-width: 280px;
+  max-width: 320px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Menu Title */
+.accessibility-menu-title {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: bold;
+  color: #000;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #0066cc;
+}
+
+/* Individual Accessibility Options */
+.accessibility-option {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.accessibility-option:last-of-type {
+  border-bottom: none;
+}
+
+/* Toggle Buttons */
+.toggle-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 8px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.toggle-button:hover {
+  border-color: #0066cc;
+  background-color: #f0f4ff;
+}
+
+.toggle-button:focus {
+  outline: 3px solid #ffb81c;
+  outline-offset: 2px;
+  border-color: #0066cc;
+}
+
+.toggle-button.active {
+  background-color: #0066cc;
+  color: white;
+  border-color: #003d99;
+}
+
+.toggle-button.active:hover {
+  background-color: #0052a3;
+}
+
+.toggle-icon {
+  margin-right: 10px;
+  font-size: 18px;
+  display: inline-block;
+  min-width: 24px;
+}
+
+/* Option Description */
+.option-description {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+  padding: 0 8px;
+  line-height: 1.4;
+}
+
+/* Reset Button */
+.reset-button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  background-color: #f0f0f0;
+  border: 2px solid #999;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.reset-button:hover {
+  background-color: #e0e0e0;
+  border-color: #666;
+}
+
+.reset-button:focus {
+  outline: 3px solid #ffb81c;
+  outline-offset: 2px;
+}
+
+.reset-button:active {
+  transform: scale(0.98);
+}
+
+/* Accessibility Info */
+.accessibility-info {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.info-text {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.wcag-note {
+  margin: 0;
+  font-size: 11px;
+  color: #0066cc;
+  font-weight: bold;
+  text-align: center;
+  padding-top: 8px;
+}
+
+/* HIGH CONTRAST MODE STYLES */
+html[data-contrast="high"],
+body.high-contrast-mode {
+  --text-color: #000;
+  --bg-color: #fff;
+  --border-color: #000;
+  --focus-color: #ffff00;
+}
+
+body.high-contrast-mode {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+body.high-contrast-mode * {
+  background-color: inherit;
+  color: inherit;
+}
+
+body.high-contrast-mode button,
+body.high-contrast-mode a,
+body.high-contrast-mode input,
+body.high-contrast-mode select,
+body.high-contrast-mode textarea {
+  border: 2px solid #000 !important;
+  color: #000 !important;
+}
+
+body.high-contrast-mode button {
+  background-color: #ffff00 !important;
+  color: #000 !important;
+}
+
+body.high-contrast-mode button:hover,
+body.high-contrast-mode button:focus {
+  background-color: #000 !important;
+  color: #ffff00 !important;
+}
+
+body.high-contrast-mode a {
+  color: #0000ee !important;
+  text-decoration: underline !important;
+}
+
+body.high-contrast-mode a:visited {
+  color: #551a8b !important;
+}
+
+body.high-contrast-mode .accessibility-toggle {
+  background-color: #ffff00 !important;
+  border: 3px solid #000 !important;
+  color: #000 !important;
+}
+
+body.high-contrast-mode .accessibility-menu {
+  background-color: #ffffff !important;
+  border: 3px solid #000 !important;
+  color: #000 !important;
+}
+
+body.high-contrast-mode .accessibility-menu-title {
+  color: #000 !important;
+  border-bottom: 3px solid #000 !important;
+}
+
+body.high-contrast-mode .toggle-button {
+  background-color: #ffff00 !important;
+  border: 2px solid #000 !important;
+  color: #000 !important;
+}
+
+body.high-contrast-mode .toggle-button.active {
+  background-color: #000 !important;
+  color: #ffff00 !important;
+}
+
+/* Responsive Design for Accessibility Panel */
+@media (max-width: 480px) {
+  .accessibility-panel {
+    bottom: 10px;
+    right: 10px;
+  }
+
+  .accessibility-toggle {
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
+  }
+
+  .accessibility-menu {
+    bottom: 65px;
+    min-width: 260px;
+    padding: 16px;
+  }
+}
+
+/* Focus Visible for Keyboard Navigation */
+.accessibility-toggle:focus-visible,
+.toggle-button:focus-visible,
+.reset-button:focus-visible {
+  outline: 3px solid #ffb81c;
+  outline-offset: 2px;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .accessibility-panel,
+  .accessibility-toggle,
+  .toggle-button,
+  .reset-button,
+  .accessibility-menu {
+    animation: none;
+    transition: none;
+  }
+}
