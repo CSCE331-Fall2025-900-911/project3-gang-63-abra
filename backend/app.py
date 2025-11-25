@@ -4,8 +4,12 @@ from urllib.parse import urlencode
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, request, session, url_for
+from flask import Flask, jsonify, redirect, request, session, url_for
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from authlib.integrations.flask_client import OAuth
+
+from flask_cors import CORS
 from authlib.integrations.flask_client import OAuth
 
 from flask_cors import CORS
@@ -23,8 +27,8 @@ CORS(app,
      methods=["GET", "POST", "OPTIONS"])
 
 # Session configuration for cross-origin
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'   # changed for Vercel
+app.config['SESSION_COOKIE_SECURE'] = True       # changed for Vercel HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 
 # Allowed test users
@@ -42,14 +46,10 @@ google = oauth.register(
     client_id=os.getenv("GOOGLE_CLIENT_ID"),
     client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    client_kwargs={
-        'scope': 'openid email profile'
-    }
+    client_kwargs={'scope': 'openid email profile'}
 )
 
-
 def _get_db_settings():
-    """Read database settings from the environment with safe defaults."""
     return {
         "name": os.getenv("DATABASE_NAME", "gang_63_db"),
         "user": os.getenv("DATABASE_USER", "gang_63"),
@@ -59,10 +59,8 @@ def _get_db_settings():
         "sslmode": os.getenv("DATABASE_SSLMODE", "require"),
     }
 
-
 @contextmanager
 def _db_cursor():
-    """Yield a psycopg cursor that cleans up after itself."""
     settings = _get_db_settings()
     if not settings["password"]:
         raise RuntimeError("PASSWORD is not configured. Update the .env file before starting the backend.")
@@ -85,10 +83,6 @@ def _db_cursor():
 
 
 def fetch_menu_items():
-    """
-    Retrieve menu items from Postgres.
-    Update MENU_QUERY in the environment if your schema differs.
-    """
     default_query = """
         SELECT
           item_id AS id,
@@ -118,52 +112,10 @@ def fetch_menu_items():
 def get_menu():
     try:
         menu = fetch_menu_items()
-    except Exception as exc:  # pragma: no cover - logged for visibility
+    except Exception as exc:
         app.logger.exception("Unable to fetch menu: %s", exc)
         return jsonify({"error": "Unable to load menu"}), 500
     return jsonify(menu)
-
-
-@app.route('/auth/google')
-def google_auth():
-    redirect_uri = url_for('google_callback', _external=True)
-    return google.authorize_redirect(redirect_uri)
-
-@app.route('/auth/google/callback')
-def google_callback():
-    try:
-        token = google.authorize_access_token()
-        
-        # Use the token to get user info
-        resp = google.get('https://www.googleapis.com/oauth2/v2/userinfo')
-        user_info = resp.json()
-        
-        # Check if the email is in the allowed list
-        user_email = user_info.get('email', '').lower()
-        if user_email not in [email.lower() for email in ALLOWED_EMAILS]:
-            app.logger.warning(f"Unauthorized login attempt from: {user_email}")
-            return f"<h1>Access Denied</h1><p>Your email ({user_email}) is not authorized to access this system.</p>", 403
-        
-        session['user'] = user_info
-        app.logger.info(f"User logged in successfully: {user_email}")
-        
-        # Redirect to the frontend, which can then decide where to take the user.
-        return redirect(os.getenv("FRONTEND_URL", "http://localhost:5173/"))
-    except Exception as e:
-        app.logger.error(f"Error during Google callback: {str(e)}")
-        return f"<h1>Authentication Error</h1><p>An error occurred during login: {str(e)}</p>", 500
-
-@app.route('/api/user')
-def get_user():
-    user = session.get('user')
-    if user:
-        return jsonify(user)
-    return jsonify({'error': 'Not logged in'}), 401
-
-@app.route('/api/logout')
-def logout():
-    session.pop('user', None)
-    return jsonify({'message': 'Logged out successfully'})
 
 
 if __name__ == "__main__":
