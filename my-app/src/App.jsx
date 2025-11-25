@@ -31,6 +31,7 @@ function App() {
   // so it can tell the App to switch views after a successful login.
   const handleLoginSuccess = () => {
     setCurrentPage('manager');
+    setCurrentPage('manager');
   };
 
   // This function lets us switch back to the login page (or any other page)
@@ -69,6 +70,7 @@ function App() {
     <div className="app-container">
       <Navigation />
       {renderCurrentPage()}
+      <AccessibilityPanel />
       <AccessibilityPanel />
     </div>
   );

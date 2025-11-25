@@ -1,4 +1,3 @@
-// api.js
 const DEFAULT_API_BASE = "https://backend-hazel-nine-20.vercel.app/api";
 
 const API_BASE =
@@ -11,6 +10,8 @@ const buildUrl = (path = "") => {
 };
 
 export async function fetchMenu() {
+  const res = await fetch(buildUrl("/menu"));
+
   const res = await fetch(buildUrl("/menu"));
   if (!res.ok) throw new Error("Failed to load menu");
 
