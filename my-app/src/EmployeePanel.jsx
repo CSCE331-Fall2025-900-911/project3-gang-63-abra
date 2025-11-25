@@ -29,19 +29,20 @@ export default function EmployeePanel({ onBack }) {
   }
 
   async function addItem(item) {
+    console.log("Menu items:", menu);
     const q = parseInt(qty, 10);
     if (!q || q <= 0) return alert("Quantity must be positive");
 
     // Stock check API
-    const check = await checkStock(item.id, q);
+    // const check = await checkStock(item.id, q);
 
-    if (!check.ok) {
-      alert(
-        `Not enough stock for ${check.ingredient}\n` +
-        `Needed: ${check.needed}, Available: ${check.available}`
-      );
-      return;
-    }
+    // if (!check.ok) {
+    //   alert(
+    //     `Not enough stock for ${check.ingredient}\n` +
+    //     `Needed: ${check.needed}, Available: ${check.available}`
+    //   );
+    //   return;
+    // }
 
     const subtotal = roundDown(item.price * q);
 
