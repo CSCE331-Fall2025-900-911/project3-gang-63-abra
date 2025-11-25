@@ -1,0 +1,63 @@
+SCRUM Meeting 6 for project3-gang-63-abra
+Prepared by: Athul Mohanram 
+Meeting Date: 11/24/25
+
+Meeting Attendees:
+- Zaheer Sufi
+- Mason Nguyen
+- Prisha Sharma
+- Athul Mohanram
+
+Meeting Agenda Items:
+- Final review of Sprint 2 deliverables (OAuth, Accessibility, Weather)
+- Demonstration of the "Vishnu" persona features
+- Planning for Sprint 3 (Manager Dashboard focus)
+
+Status Update Since Last Meeting
+Accomplishments:
+- Google OAuth is fully functional for secure login.
+- Accessibility features (Screen Magnifier and High Contrast) are live for the Vishnu persona.
+- Weather API is integrated and suggesting drinks.
+
+Tasks Completed:
+Task Description: Implement Google OAuth
+Assigned to: Prisha Sharma / Zaheer Sufi
+Completed?: Yes
+
+Task Description: Implement Accessibility (Magnifier/Contrast)
+Assigned to: Prisha Sharma
+Completed?: Yes
+
+Task Description: Integrate Weather API
+Assigned to: Athul Mohanram
+Completed?: Yes
+
+Task Description: Add backend API calls for Employee Panel
+Assigned to: Mason Nguyen / Zaheer Sufi
+Completed?: Yes
+
+Task Description: Build order cart interface
+Assigned to: Zaheer Sufi
+Completed?: Yes
+
+Before The Next Meeting
+Plans:
+- Deploy the current build to staging.
+- Shift focus to the Employee Dashboard (Sales/Inventory).
+- Begin Payment Integration.
+
+Task Assignments:
+Task Description: Fully implement functionality from project2 Employee Panel
+Assigned to: Mason Nguyen
+
+Task Description: Implement Inventory Management Logic
+Assigned to: Zaheer Sufi
+
+Task Description: Payment Gateway Integration
+Assigned to: Athul Mohanram
+
+Task Description: UX Testing Preparation
+Assigned to: Prisha Sharma
+
+Minutes from Previous Meeting:
+During the 11/21 meeting, the team reviewed successful completion of the research phase. Prisha confirmed the Google Cloud project configuration, Athul demonstrated the Weather API JSON response, and Mason and Zaheer created the API calls for the Employee and Manager pages. The team then assigned implementation tasks, focusing on Accessibility features for the Vishnu persona and ensuring Cart logic was completed before the end of the sprint. The Employee Panel API calls are working but still require full frontend integration.

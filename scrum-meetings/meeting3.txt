@@ -1,0 +1,48 @@
+SCRUM Meeting 4 for project3-gang-63-abra
+Prepared by: Prisha Sharma 
+Meeting Date: 11/18/25
+
+Meeting Attendees:
+- Zaheer Sufi
+- Mason Nguyen
+- Prisha Sharma
+- Athul Mohanram
+
+Meeting Agenda Items:
+- Assign stories to individual people
+- Discuss potential roadblocks that could hinder progress
+
+Status Update Since Last Meeting
+Accomplishments:
+- Backend fully deployed
+- Customer kiosk basic implementation finished
+
+Tasks Completed:
+Task Description: Create product backlog
+Assigned to: Everyone
+Completed?: Yes
+
+Task Description: Assign points to stories
+Assigned to: Everyone
+Completed?: Yes
+
+Before The Next Meeting
+Plans:
+- Be able to run project locally (right now it only works on deployment)
+- Add accessibility features
+
+Task Assignments:
+Task Description: Implement way to have different screens based on the user
+Assigned to: Prisha Sharma
+
+Task Description: Implement Weather API
+Assigned to: Athul Mohanram
+
+Task Description: Create basic layout for employee panel
+Assigned to: Mason Nguyen
+
+Task Description: Figure out a way to run project locally
+Assigned to: Zaheer Sufi / Mason Nguyen
+
+Minutes from Previous Meeting:
+During the previous meeting, the team established the foundation for the Sharetea customer kiosk project. The group discussed the overall project goals, including creating an interactive ordering system to improve customer experience and streamline store operations. The team collaborated to create the initial product backlog, identifying core features such as the menu interface, order customization, payment integration, and database connectivity. After reviewing each item, the group assigned story points to prioritize key tasks for the first development sprint. Roles and early technical research areas were also outlined to prepare for implementation.

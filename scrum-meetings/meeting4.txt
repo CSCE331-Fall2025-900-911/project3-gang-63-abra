@@ -1,0 +1,58 @@
+SCRUM Meeting 5 for project3-gang-63-abra
+Prepared by: Mason Nguyen 
+Meeting Date: 11/21/25
+
+Meeting Attendees:
+- Zaheer Sufi
+- Mason Nguyen
+- Prisha Sharma
+- Athul Mohanram
+
+Meeting Agenda Items:
+- Discuss ways to add accessibility features for Vishnu
+- Check progress on Employee panel and Google OAuth
+- Assign implementation tasks for the second half of the sprint
+
+Status Update Since Last Meeting
+Accomplishments:
+- Project is able to run locally
+- Basic layout of Employee panel is done and can view different screens from home page
+
+Tasks Completed:
+Task Description: Implement way to have different screens based on the user
+Assigned to: Prisha Sharma
+Completed?: Yes
+
+Task Description: Implement Weather API
+Assigned to: Athul Mohanram
+Completed?: Yes
+
+Task Description: Create basic layout for employee kiosk
+Assigned to: Mason Nguyen
+Completed?: Yes
+
+Task Description: Figure out a way to run project locally
+Assigned to: Zaheer Sufi
+Completed?: Yes
+
+Before The Next Meeting
+Plans:
+- Prisha to implement the functional Google Login button using the credentials set up during research.
+- Athul to connect the backend Weather endpoint to the frontend display.
+- Zaheer/Mason to finalize the Cart logic and Customization screens.
+
+Task Assignments:
+Task Description: Implement Google OAuth (Frontend/Backend)
+Assigned to: Prisha Sharma / Zaheer Sufi
+
+Task Description: Implement Accessibility Features (Magnifier/Contrast)
+Assigned to: Prisha Sharma
+
+Task Description: Integrate Weather API Endpoint
+Assigned to: Athul Mohanram
+
+Task Description: Have the employee panel be able to access database
+Assigned to: Mason Nguyen / Zaheer Sufi
+
+Minutes from Previous Meeting:
+In the previous meeting (11/18), the team focused on assigning tasks and goals for the upcoming sprint. Prisha was assigned to investigate Google Authentication and implement multi-user screens, Athul was assigned the Weather API, Mason handled the employee panel layout, and Zaheer ensured the project ran locally. The team agreed to reconvene to review progress and identify roadblocks.
