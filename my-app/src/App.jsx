@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import CustomerKiosk from './CustomerKiosk.jsx'; // Import the kiosk
 import LoginPage from './loginPage.jsx';       // Import the login page
 import ManagerPage from './ManagerPage.jsx';   // Import the manager page
+import EmployeePanel from './EmployeePanel.jsx';
 import AccessibilityPanel from './AccessibilityPanel.jsx'; // Import accessibility panel
 import './App.css'; // This file will now hold styles for all components
 
@@ -43,6 +44,7 @@ function App() {
       <button onClick={() => navigate('login')}>Login Page</button>
       <button onClick={() => navigate('kiosk')}>Customer Kiosk</button>
       <button onClick={() => navigate('manager')}>Manager Page</button>
+      <button onClick={() => navigate('employee')}>Employee Panel</button>
       {/* You can add more buttons here as you build the Manager/Cashier views */}
     </nav>
   );
@@ -56,6 +58,8 @@ function App() {
         return <CustomerKiosk />;
       case 'manager':
         return <ManagerPage />;
+      case 'employee':
+        return <EmployeePanel />;
       default:
         return <CustomerKiosk />;
     }
