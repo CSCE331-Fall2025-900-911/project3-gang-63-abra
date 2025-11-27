@@ -48,6 +48,8 @@ export default function CustomerKiosk() {
   const [category, setCategory] = useState("All");
   const [selectedDrink, setSelectedDrink] = useState(null);
   const [selectedToppings, setSelectedToppings] = useState([]);
+  const [translatorReady, setTranslatorReady] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState("en");
 
   useEffect(() => {
     let mounted = true;
@@ -67,6 +69,58 @@ export default function CustomerKiosk() {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const scriptId = "google-translate-script";
+    const elementId = "google_translate_element";
+
+    const ensureSelectReady = () => {
+      const select = document.querySelector("select.goog-te-combo");
+      if (select) {
+        setTranslatorReady(true);
+        return true;
+      }
+      return false;
+    };
+
+    const initTranslateElement = () => {
+      if (!window.google || !window.google.translate) return;
+      if (!window.__googleTranslateInitialized) {
+        new window.google.translate.TranslateElement(
+          {
+            pageLanguage: "en",
+            includedLanguages: "en,es",
+            autoDisplay: false,
+          },
+          elementId
+        );
+        window.__googleTranslateInitialized = true;
+      }
+      ensureSelectReady();
+    };
+
+    window.googleTranslateElementInit = initTranslateElement;
+
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+      script.async = true;
+      document.body.appendChild(script);
+    } else if (window.google && window.google.translate) {
+      initTranslateElement();
+    }
+
+    const interval = setInterval(() => {
+      if (ensureSelectReady()) {
+        clearInterval(interval);
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
   }, []);
 
   const drinks = useMemo(() => items.filter((it) => !it.isTopping), [items]);
@@ -124,6 +178,21 @@ export default function CustomerKiosk() {
   const total = cart.reduce((sum, item) => sum + perItemTotal(item) * item.qty, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.qty, 0);
 
+  const changeLanguage = (lang) => {
+    const select = document.querySelector("select.goog-te-combo");
+    if (!select) return;
+    select.value = lang;
+    select.dispatchEvent(new Event("change"));
+    setCurrentLanguage(lang);
+  };
+
+  const languageButtonClass = (lang) =>
+    `px-4 py-1.5 rounded-full text-sm font-semibold border transition ${
+      currentLanguage === lang
+        ? "bg-pink-500 text-white border-pink-500"
+        : "bg-white/90 text-slate-600 border-white/60 hover:border-pink-200"
+    }`;
+
   const startCustomization = (drink) => {
     setSelectedDrink(drink);
     setSelectedToppings([]);
@@ -165,6 +234,7 @@ export default function CustomerKiosk() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-amber-50 relative">
+      <div id="google_translate_element" className="hidden" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-0 z-0">
         <div className="pointer-events-none absolute -top-32 -right-16 w-80 h-80 bg-pink-200/40 blur-[120px]" />
         <div className="pointer-events-none absolute top-40 -left-10 w-72 h-72 bg-amber-200/40 blur-[120px]" />
@@ -192,22 +262,49 @@ export default function CustomerKiosk() {
             </div>
             {error && <p className="text-sm text-amber-600">{error}</p>}
           </div>
-          <button
-            type="button"
-            onClick={() => (cart.length ? setPhase("checkout") : null)}
-            className={`w-full md:w-auto flex items-center gap-4 rounded-3xl border border-white/60 bg-white/80 px-6 py-4 shadow-lg backdrop-blur transition focus:outline-none focus:ring-4 focus:ring-pink-200 ${
-              cart.length ? "hover:-translate-y-1" : "opacity-60"
-            }`}
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-pink-500 text-white">
-              <ShoppingCart />
+          <div className="flex flex-col gap-4 w-full md:w-auto md:items-end">
+            <div className="rounded-3xl border border-white/60 bg-white/80 px-6 py-4 shadow-lg backdrop-blur">
+              <p className="text-xs uppercase tracking-widest text-slate-400">Language</p>
+              <p className="text-sm text-slate-500 mt-1">Use Google Translate to view the kiosk in Spanish.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className={languageButtonClass("en")}
+                  onClick={() => changeLanguage("en")}
+                  disabled={!translatorReady || currentLanguage === "en"}
+                >
+                  English
+                </button>
+                <button
+                  type="button"
+                  className={languageButtonClass("es")}
+                  onClick={() => changeLanguage("es")}
+                  disabled={!translatorReady || currentLanguage === "es"}
+                >
+                  Español
+                </button>
+              </div>
+              {!translatorReady && <p className="mt-2 text-xs text-amber-600">Loading Google Translate…</p>}
             </div>
-            <div className="text-left">
-              <p className="text-xs uppercase tracking-wide text-slate-400">Cart Summary</p>
-              <p className="text-lg font-bold text-slate-800">{itemCount} item{itemCount === 1 ? "" : "s"}</p>
-              <p className="text-sm text-slate-500">${total.toFixed(2)} • Tap to review</p>
-            </div>
-          </button>
+            <button
+              type="button"
+              onClick={() => (cart.length ? setPhase("checkout") : null)}
+              className={`w-full md:w-auto flex items-center gap-4 rounded-3xl border border-white/60 bg-white/80 px-6 py-4 shadow-lg backdrop-blur transition focus:outline-none focus:ring-4 focus:ring-pink-200 ${
+                cart.length ? "hover:-translate-y-1" : "opacity-60"
+              }`}
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-pink-500 text-white">
+                <ShoppingCart />
+              </div>
+              <div className="text-left">
+                <p className="text-xs uppercase tracking-wide text-slate-400">Cart Summary</p>
+                <p className="text-lg font-bold text-slate-800">
+                  {itemCount} item{itemCount === 1 ? "" : "s"}
+                </p>
+                <p className="text-sm text-slate-500">${total.toFixed(2)} • Tap to review</p>
+              </div>
+            </button>
+          </div>
         </header>
 
         {phase === "browsing" && (
