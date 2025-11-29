@@ -25,3 +25,161 @@ export async function fetchMenu() {
       }))
     : [];
 }
+
+// ==================== ORDER HISTORY API ====================
+
+export async function fetchOrders(startDate = null, endDate = null) {
+  let url = buildUrl("/orders");
+  if (startDate && endDate) {
+    url += `?start_date=${startDate}&end_date=${endDate}`;
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to load orders");
+  return res.json();
+}
+
+export async function fetchOrderItems(orderId) {
+  const res = await fetch(buildUrl(`/orders/${orderId}/items`));
+  if (!res.ok) throw new Error("Failed to load order items");
+  return res.json();
+}
+
+export async function fetchOrderTrends(startDate, endDate) {
+  const res = await fetch(buildUrl(`/orders/trends?start_date=${startDate}&end_date=${endDate}`));
+  if (!res.ok) throw new Error("Failed to load order trends");
+  return res.json();
+}
+
+// ==================== INVENTORY API ====================
+
+export async function fetchInventory() {
+  const res = await fetch(buildUrl("/inventory"));
+  if (!res.ok) throw new Error("Failed to load inventory");
+  return res.json();
+}
+
+export async function fetchLowStock(threshold = 10) {
+  const res = await fetch(buildUrl(`/inventory/low-stock?threshold=${threshold}`));
+  if (!res.ok) throw new Error("Failed to load low stock items");
+  return res.json();
+}
+
+export async function restockInventory(items) {
+  const res = await fetch(buildUrl("/inventory/restock"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+  if (!res.ok) throw new Error("Failed to restock inventory");
+  return res.json();
+}
+
+export async function updateInventoryItem(ingredientId, stock) {
+  const res = await fetch(buildUrl(`/inventory/${ingredientId}`), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ stock }),
+  });
+  if (!res.ok) throw new Error("Failed to update inventory item");
+  return res.json();
+}
+
+export async function addInventoryItem(name, stock = 0) {
+  const res = await fetch(buildUrl("/inventory"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, stock }),
+  });
+  if (!res.ok) throw new Error("Failed to add inventory item");
+  return res.json();
+}
+
+export async function deleteInventoryItem(ingredientId) {
+  const res = await fetch(buildUrl(`/inventory/${ingredientId}`), {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete inventory item");
+  return res.json();
+}
+
+// ==================== EMPLOYEE API ====================
+
+export async function fetchEmployees() {
+  const res = await fetch(buildUrl("/employees"));
+  if (!res.ok) throw new Error("Failed to load employees");
+  return res.json();
+}
+
+export async function fetchEmployee(employeeId) {
+  const res = await fetch(buildUrl(`/employees/${employeeId}`));
+  if (!res.ok) throw new Error("Failed to load employee");
+  return res.json();
+}
+
+export async function addEmployee(name, salary = null, managerId = 0) {
+  const res = await fetch(buildUrl("/employees"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, salary, manager_id: managerId }),
+  });
+  if (!res.ok) throw new Error("Failed to add employee");
+  return res.json();
+}
+
+export async function updateEmployee(employeeId, data) {
+  const res = await fetch(buildUrl(`/employees/${employeeId}`), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update employee");
+  return res.json();
+}
+
+export async function deleteEmployee(employeeId) {
+  const res = await fetch(buildUrl(`/employees/${employeeId}`), {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete employee");
+  return res.json();
+}
+
+export async function fetchEmployeePerformance(employeeId, startDate = null, endDate = null) {
+  let url = buildUrl(`/employees/${employeeId}/performance`);
+  if (startDate && endDate) {
+    url += `?start_date=${startDate}&end_date=${endDate}`;
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to load employee performance");
+  return res.json();
+}
+
+// ==================== MENU MANAGEMENT API ====================
+
+export async function addMenuItem(name, price, isTopping = false) {
+  const res = await fetch(buildUrl("/menu"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, price, is_topping: isTopping }),
+  });
+  if (!res.ok) throw new Error("Failed to add menu item");
+  return res.json();
+}
+
+export async function updateMenuItem(itemId, data) {
+  const res = await fetch(buildUrl(`/menu/${itemId}`), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update menu item");
+  return res.json();
+}
+
+export async function deleteMenuItem(itemId) {
+  const res = await fetch(buildUrl(`/menu/${itemId}`), {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete menu item");
+  return res.json();
+}
