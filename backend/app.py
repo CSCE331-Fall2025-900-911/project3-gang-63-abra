@@ -19,9 +19,9 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "a-super-secret-key")
 # Proper CORS configuration for authentication
 CORS(app, 
      supports_credentials=True,
-     origins=[os.getenv("FRONTEND_URL", "http://localhost:5173")],
+     origins=["http://localhost:5173", "http://localhost:5174", os.getenv("FRONTEND_URL", "http://localhost:5173")],
      allow_headers=["Content-Type", "Authorization"],
-     methods=["GET", "POST", "OPTIONS"])
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
 # Session configuration for cross-origin
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
