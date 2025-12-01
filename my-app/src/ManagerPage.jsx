@@ -1,10 +1,1034 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { 
+  BarChart3, 
+  Package, 
+  Users, 
+  TrendingUp, 
+  AlertTriangle, 
+  Plus, 
+  Pencil, 
+  Trash2, 
+  X,
+  RefreshCw,
+  Calendar,
+  DollarSign,
+  ShoppingBag,
+  Clock
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import {
+  fetchOrders,
+  fetchOrderTrends,
+  fetchInventory,
+  fetchLowStock,
+  restockInventory,
+  updateInventoryItem,
+  addInventoryItem,
+  deleteInventoryItem,
+  fetchEmployees,
+  addEmployee,
+  updateEmployee,
+  deleteEmployee,
+  fetchEmployeePerformance,
+} from './api';
+
+// ==================== REUSABLE COMPONENTS ====================
+
+const Button = ({ children, className = "", variant = "primary", ...props }) => {
+  const baseStyles = "px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 justify-center";
+  const variants = {
+    primary: "bg-pink-500 hover:bg-pink-600 text-white",
+    secondary: "bg-gray-200 hover:bg-gray-300 text-gray-700",
+    danger: "bg-red-500 hover:bg-red-600 text-white",
+    success: "bg-green-500 hover:bg-green-600 text-white",
+  };
+  return (
+    <button className={`${baseStyles} ${variants[variant]} ${className}`} {...props}>
+      {children}
+    </button>
+  );
+};
+
+const Card = ({ children, className = "" }) => (
+  <div className={`bg-white rounded-2xl shadow-md p-6 ${className}`}>{children}</div>
+);
+
+const Modal = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-4">{children}</div>
+      </motion.div>
+    </div>
+  );
+};
+
+const StatCard = ({ title, value, icon: Icon, trend, color = "pink" }) => {
+  const colors = {
+    pink: "bg-pink-100 text-pink-600",
+    green: "bg-green-100 text-green-600",
+    blue: "bg-blue-100 text-blue-600",
+    orange: "bg-orange-100 text-orange-600",
+  };
+  return (
+    <Card className="flex items-center gap-4">
+      <div className={`p-3 rounded-xl ${colors[color]}`}>
+        <Icon className="w-6 h-6" />
+      </div>
+      <div>
+        <p className="text-sm text-gray-500">{title}</p>
+        <p className="text-2xl font-bold text-gray-800">{value}</p>
+        {trend && <p className="text-xs text-green-500">{trend}</p>}
+      </div>
+    </Card>
+  );
+};
+
+// ==================== TABS ====================
+
+const TabButton = ({ active, onClick, icon: Icon, children }) => (
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-2 px-4 py-3 font-medium transition border-b-2 ${
+      active 
+        ? "border-pink-500 text-pink-600" 
+        : "border-transparent text-gray-500 hover:text-gray-700"
+    }`}
+  >
+    <Icon className="w-5 h-5" />
+    {children}
+  </button>
+);
+
+// ==================== ORDER TRENDS TAB ====================
+
+const OrderTrendsTab = () => {
+  const [loading, setLoading] = useState(false);
+  const [trends, setTrends] = useState(null);
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [error, setError] = useState("");
+
+  const loadTrends = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await fetchOrderTrends(startDate, endDate);
+      setTrends(data);
+    } catch (e) {
+      setError("Failed to load order trends. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTrends();
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      {/* Date Range Selector */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Calendar className="w-5 h-5" />
+          Select Date Range
+        </h3>
+        <div className="flex flex-wrap items-end gap-4">
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Start Date</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">End Date</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2"
+            />
+          </div>
+          <Button onClick={loadTrends} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? "Loading..." : "Analyze Trends"}
+          </Button>
+        </div>
+        {error && <p className="text-red-500 mt-2">{error}</p>}
+      </Card>
+
+      {trends && (
+        <>
+          {/* Summary Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard 
+              title="Total Orders" 
+              value={trends.summary.total_orders.toLocaleString()} 
+              icon={ShoppingBag}
+              color="pink"
+            />
+            <StatCard 
+              title="Total Sales" 
+              value={`$${trends.summary.total_sales.toFixed(2)}`} 
+              icon={DollarSign}
+              color="green"
+            />
+            <StatCard 
+              title="Avg Order Value" 
+              value={trends.summary.total_orders > 0 
+                ? `$${(trends.summary.total_sales / trends.summary.total_orders).toFixed(2)}` 
+                : "$0.00"
+              } 
+              icon={TrendingUp}
+              color="blue"
+            />
+            <StatCard 
+              title="Days Analyzed" 
+              value={trends.daily_sales.length} 
+              icon={Calendar}
+              color="orange"
+            />
+          </div>
+
+          {/* Top Selling Items */}
+          <Card>
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" />
+              Top Selling Items
+            </h3>
+            {trends.top_items.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 px-3">Rank</th>
+                      <th className="text-left py-2 px-3">Item Name</th>
+                      <th className="text-right py-2 px-3">Quantity Sold</th>
+                      <th className="text-right py-2 px-3">Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trends.top_items.map((item, index) => (
+                      <tr key={item.item_id} className="border-b hover:bg-gray-50">
+                        <td className="py-2 px-3">
+                          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-sm font-bold ${
+                            index === 0 ? 'bg-yellow-100 text-yellow-700' :
+                            index === 1 ? 'bg-gray-100 text-gray-700' :
+                            index === 2 ? 'bg-orange-100 text-orange-700' :
+                            'bg-gray-50 text-gray-500'
+                          }`}>
+                            {index + 1}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 font-medium">{item.name}</td>
+                        <td className="py-2 px-3 text-right">{item.total_sold}</td>
+                        <td className="py-2 px-3 text-right text-green-600 font-semibold">
+                          ${item.revenue.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No sales data for this period</p>
+            )}
+          </Card>
+
+          {/* Daily Sales Chart (Simple Bar Representation) */}
+          <Card>
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              Daily Sales
+            </h3>
+            {trends.daily_sales.length > 0 ? (
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {trends.daily_sales.map((day) => {
+                  const maxSales = Math.max(...trends.daily_sales.map(d => d.daily_sales));
+                  const percentage = maxSales > 0 ? (day.daily_sales / maxSales) * 100 : 0;
+                  return (
+                    <div key={day.date} className="flex items-center gap-3">
+                      <span className="text-sm text-gray-500 w-24 flex-shrink-0">{day.date}</span>
+                      <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
+                        <div 
+                          className="bg-pink-500 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold w-20 text-right">
+                        ${day.daily_sales.toFixed(2)}
+                      </span>
+                      <span className="text-xs text-gray-400 w-16 text-right">
+                        {day.order_count} orders
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No daily data available</p>
+            )}
+          </Card>
+
+          {/* Sales by Employee */}
+          <Card>
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Sales by Employee
+            </h3>
+            {trends.sales_by_employee.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 px-3">Employee</th>
+                      <th className="text-right py-2 px-3">Orders</th>
+                      <th className="text-right py-2 px-3">Total Sales</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trends.sales_by_employee.map((emp) => (
+                      <tr key={emp.employee_id} className="border-b hover:bg-gray-50">
+                        <td className="py-2 px-3 font-medium">{emp.name}</td>
+                        <td className="py-2 px-3 text-right">{emp.order_count}</td>
+                        <td className="py-2 px-3 text-right text-green-600 font-semibold">
+                          ${emp.total_sales.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No employee data for this period</p>
+            )}
+          </Card>
+
+          {/* Hourly Distribution */}
+          <Card>
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Orders by Hour
+            </h3>
+            {trends.hourly_distribution.length > 0 ? (
+              <div className="flex items-end gap-1 h-40">
+                {Array.from({ length: 24 }, (_, hour) => {
+                  const hourData = trends.hourly_distribution.find(h => h.hour === hour);
+                  const count = hourData?.order_count || 0;
+                  const maxCount = Math.max(...trends.hourly_distribution.map(h => h.order_count));
+                  const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                  return (
+                    <div key={hour} className="flex-1 flex flex-col items-center">
+                      <div 
+                        className="w-full bg-blue-400 rounded-t transition-all duration-300 hover:bg-blue-500"
+                        style={{ height: `${height}%`, minHeight: count > 0 ? '4px' : '0' }}
+                        title={`${hour}:00 - ${count} orders`}
+                      />
+                      {hour % 4 === 0 && (
+                        <span className="text-xs text-gray-400 mt-1">{hour}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No hourly data available</p>
+            )}
+          </Card>
+        </>
+      )}
+    </div>
+  );
+};
+
+// ==================== INVENTORY TAB ====================
+
+const InventoryTab = () => {
+  const [inventory, setInventory] = useState([]);
+  const [lowStock, setLowStock] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showRestockModal, setShowRestockModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [restockItems, setRestockItems] = useState([]);
+  const [newItem, setNewItem] = useState({ name: "", stock: 0 });
+  const [threshold, setThreshold] = useState(10);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [inv, low] = await Promise.all([
+        fetchInventory(),
+        fetchLowStock(threshold)
+      ]);
+      setInventory(inv);
+      setLowStock(low);
+    } catch (e) {
+      setError("Failed to load inventory data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [threshold]);
+
+  const handleAddItem = async () => {
+    if (!newItem.name.trim()) return;
+    try {
+      await addInventoryItem(newItem.name, newItem.stock);
+      setNewItem({ name: "", stock: 0 });
+      setShowAddModal(false);
+      loadData();
+    } catch (e) {
+      setError("Failed to add item");
+    }
+  };
+
+  const handleUpdateStock = async (ingredientId, newStock) => {
+    try {
+      await updateInventoryItem(ingredientId, newStock);
+      setEditingItem(null);
+      loadData();
+    } catch (e) {
+      setError("Failed to update stock");
+    }
+  };
+
+  const handleDeleteItem = async (ingredientId) => {
+    if (!confirm("Are you sure you want to delete this item?")) return;
+    try {
+      await deleteInventoryItem(ingredientId);
+      loadData();
+    } catch (e) {
+      setError("Failed to delete item");
+    }
+  };
+
+  const handleRestock = async () => {
+    const itemsToRestock = restockItems.filter(item => item.quantity > 0);
+    if (itemsToRestock.length === 0) return;
+    try {
+      await restockInventory(itemsToRestock);
+      setRestockItems([]);
+      setShowRestockModal(false);
+      loadData();
+    } catch (e) {
+      setError("Failed to restock inventory");
+    }
+  };
+
+  const openRestockModal = () => {
+    setRestockItems(lowStock.map(item => ({
+      ingredient_id: item.ingredient_id,
+      name: item.name,
+      current_stock: item.stock,
+      quantity: 0
+    })));
+    setShowRestockModal(true);
+  };
+
+  if (loading) {
+    return <div className="flex justify-center py-12"><RefreshCw className="w-8 h-8 animate-spin text-pink-500" /></div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="bg-red-100 text-red-700 px-4 py-2 rounded-lg">{error}</div>
+      )}
+
+      {/* Low Stock Alert */}
+      {lowStock.length > 0 && (
+        <Card className="border-2 border-orange-200 bg-orange-50">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2 text-orange-700">
+              <AlertTriangle className="w-5 h-5" />
+              Low Stock Alert ({lowStock.length} items)
+            </h3>
+            <Button onClick={openRestockModal} variant="success">
+              <Package className="w-4 h-4" />
+              Create Restock Order
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {lowStock.map(item => (
+              <span 
+                key={item.ingredient_id}
+                className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  item.stock <= 0 
+                    ? 'bg-red-100 text-red-700' 
+                    : 'bg-orange-100 text-orange-700'
+                }`}
+              >
+                {item.name}: {item.stock}
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600">Low Stock Threshold:</label>
+          <input
+            type="number"
+            value={threshold}
+            onChange={(e) => setThreshold(parseInt(e.target.value) || 0)}
+            className="border border-gray-300 rounded-lg px-3 py-1 w-20"
+            min="0"
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowAddModal(true)}>
+            <Plus className="w-4 h-4" />
+            Add Ingredient
+          </Button>
+          <Button onClick={loadData} variant="secondary">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* Inventory Table */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Package className="w-5 h-5" />
+          All Inventory ({inventory.length} items)
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b bg-gray-50">
+                <th className="text-left py-3 px-4">ID</th>
+                <th className="text-left py-3 px-4">Ingredient Name</th>
+                <th className="text-right py-3 px-4">Stock</th>
+                <th className="text-center py-3 px-4">Status</th>
+                <th className="text-center py-3 px-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inventory.map(item => (
+                <tr key={item.ingredient_id} className="border-b hover:bg-gray-50">
+                  <td className="py-3 px-4 text-gray-500">{item.ingredient_id}</td>
+                  <td className="py-3 px-4 font-medium">{item.name}</td>
+                  <td className="py-3 px-4 text-right">
+                    {editingItem === item.ingredient_id ? (
+                      <input
+                        type="number"
+                        defaultValue={item.stock}
+                        className="border rounded px-2 py-1 w-20 text-right"
+                        onBlur={(e) => handleUpdateStock(item.ingredient_id, parseInt(e.target.value))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleUpdateStock(item.ingredient_id, parseInt(e.target.value));
+                          } else if (e.key === 'Escape') {
+                            setEditingItem(null);
+                          }
+                        }}
+                        autoFocus
+                      />
+                    ) : (
+                      <span className="font-semibold">{item.stock}</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 text-center">
+                    {item.stock <= 0 ? (
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                        Out of Stock
+                      </span>
+                    ) : item.stock < threshold ? (
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                        Low Stock
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                        In Stock
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => setEditingItem(item.ingredient_id)}
+                        className="p-1 text-blue-500 hover:bg-blue-50 rounded"
+                        title="Edit Stock"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteItem(item.ingredient_id)}
+                        className="p-1 text-red-500 hover:bg-red-50 rounded"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Add Item Modal */}
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Ingredient">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <input
+              type="text"
+              value={newItem.name}
+              onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              placeholder="e.g., Tapioca Pearls (ounces)"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Initial Stock</label>
+            <input
+              type="number"
+              value={newItem.stock}
+              onChange={(e) => setNewItem({ ...newItem, stock: parseInt(e.target.value) || 0 })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              min="0"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setShowAddModal(false)}>Cancel</Button>
+            <Button onClick={handleAddItem}>Add Ingredient</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Restock Modal */}
+      <Modal isOpen={showRestockModal} onClose={() => setShowRestockModal(false)} title="Create Restock Order">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Enter the quantity to add for each low-stock item:
+          </p>
+          <div className="space-y-3 max-h-60 overflow-y-auto">
+            {restockItems.map((item, index) => (
+              <div key={item.ingredient_id} className="flex items-center justify-between gap-4 p-2 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-medium">{item.name}</p>
+                  <p className="text-xs text-gray-500">Current: {item.current_stock}</p>
+                </div>
+                <input
+                  type="number"
+                  value={item.quantity}
+                  onChange={(e) => {
+                    const updated = [...restockItems];
+                    updated[index].quantity = parseInt(e.target.value) || 0;
+                    setRestockItems(updated);
+                  }}
+                  className="border rounded px-2 py-1 w-20 text-right"
+                  min="0"
+                  placeholder="Qty"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="secondary" onClick={() => setShowRestockModal(false)}>Cancel</Button>
+            <Button variant="success" onClick={handleRestock}>
+              <Package className="w-4 h-4" />
+              Submit Restock Order
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+};
+
+// ==================== EMPLOYEES TAB ====================
+
+const EmployeesTab = () => {
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [newEmployee, setNewEmployee] = useState({ name: "", salary: "", manager_id: 0 });
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [performance, setPerformance] = useState(null);
+
+  const loadEmployees = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchEmployees();
+      setEmployees(data);
+    } catch (e) {
+      setError("Failed to load employees");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadEmployees();
+  }, []);
+
+  const handleAddEmployee = async () => {
+    if (!newEmployee.name.trim()) return;
+    try {
+      await addEmployee(
+        newEmployee.name, 
+        newEmployee.salary ? parseFloat(newEmployee.salary) : null,
+        newEmployee.manager_id
+      );
+      setNewEmployee({ name: "", salary: "", manager_id: 0 });
+      setShowAddModal(false);
+      loadEmployees();
+    } catch (e) {
+      setError("Failed to add employee");
+    }
+  };
+
+  const handleUpdateEmployee = async () => {
+    if (!editingEmployee) return;
+    try {
+      await updateEmployee(editingEmployee.employee_id, {
+        name: editingEmployee.name,
+        salary: editingEmployee.salary ? parseFloat(editingEmployee.salary) : null,
+        manager_id: editingEmployee.manager_id
+      });
+      setEditingEmployee(null);
+      loadEmployees();
+    } catch (e) {
+      setError("Failed to update employee");
+    }
+  };
+
+  const handleDeleteEmployee = async (employeeId) => {
+    if (!confirm("Are you sure you want to delete this employee?")) return;
+    try {
+      await deleteEmployee(employeeId);
+      loadEmployees();
+    } catch (e) {
+      setError("Failed to delete employee");
+    }
+  };
+
+  const loadPerformance = async (employee) => {
+    setSelectedEmployee(employee);
+    try {
+      const data = await fetchEmployeePerformance(employee.employee_id);
+      setPerformance(data);
+    } catch (e) {
+      setError("Failed to load performance data");
+    }
+  };
+
+  if (loading) {
+    return <div className="flex justify-center py-12"><RefreshCw className="w-8 h-8 animate-spin text-pink-500" /></div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="bg-red-100 text-red-700 px-4 py-2 rounded-lg">{error}</div>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard 
+          title="Total Employees" 
+          value={employees.length} 
+          icon={Users}
+          color="blue"
+        />
+        <StatCard 
+          title="Managers" 
+          value={employees.filter(e => e.manager_id === 0).length} 
+          icon={Users}
+          color="green"
+        />
+        <StatCard 
+          title="Avg Salary" 
+          value={`$${(employees.reduce((sum, e) => sum + (e.salary || 0), 0) / employees.length || 0).toFixed(2)}/hr`} 
+          icon={DollarSign}
+          color="pink"
+        />
+      </div>
+
+      {/* Controls */}
+      <div className="flex justify-end gap-2">
+        <Button onClick={() => setShowAddModal(true)}>
+          <Plus className="w-4 h-4" />
+          Add Employee
+        </Button>
+        <Button onClick={loadEmployees} variant="secondary">
+          <RefreshCw className="w-4 h-4" />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Employee Table */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Users className="w-5 h-5" />
+          Employee List
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b bg-gray-50">
+                <th className="text-left py-3 px-4">ID</th>
+                <th className="text-left py-3 px-4">Name</th>
+                <th className="text-right py-3 px-4">Hourly Rate</th>
+                <th className="text-center py-3 px-4">Role</th>
+                <th className="text-center py-3 px-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {employees.map(emp => (
+                <tr key={emp.employee_id} className="border-b hover:bg-gray-50">
+                  <td className="py-3 px-4 text-gray-500">{emp.employee_id}</td>
+                  <td className="py-3 px-4 font-medium">{emp.name}</td>
+                  <td className="py-3 px-4 text-right">
+                    {emp.salary ? `$${emp.salary.toFixed(2)}` : '-'}
+                  </td>
+                  <td className="py-3 px-4 text-center">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      emp.manager_id === 0 
+                        ? 'bg-purple-100 text-purple-700' 
+                        : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {emp.manager_id === 0 ? 'Manager' : 'Employee'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => loadPerformance(emp)}
+                        className="p-1 text-green-500 hover:bg-green-50 rounded"
+                        title="View Performance"
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => setEditingEmployee({...emp})}
+                        className="p-1 text-blue-500 hover:bg-blue-50 rounded"
+                        title="Edit"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteEmployee(emp.employee_id)}
+                        className="p-1 text-red-500 hover:bg-red-50 rounded"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Add Employee Modal */}
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Employee">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <input
+              type="text"
+              value={newEmployee.name}
+              onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              placeholder="Employee Name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate ($)</label>
+            <input
+              type="number"
+              value={newEmployee.salary}
+              onChange={(e) => setNewEmployee({ ...newEmployee, salary: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              placeholder="e.g., 12.50"
+              step="0.01"
+              min="0"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <select
+              value={newEmployee.manager_id}
+              onChange={(e) => setNewEmployee({ ...newEmployee, manager_id: parseInt(e.target.value) })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            >
+              <option value={0}>Manager</option>
+              <option value={1}>Employee</option>
+            </select>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setShowAddModal(false)}>Cancel</Button>
+            <Button onClick={handleAddEmployee}>Add Employee</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Employee Modal */}
+      <Modal isOpen={!!editingEmployee} onClose={() => setEditingEmployee(null)} title="Edit Employee">
+        {editingEmployee && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <input
+                type="text"
+                value={editingEmployee.name}
+                onChange={(e) => setEditingEmployee({ ...editingEmployee, name: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate ($)</label>
+              <input
+                type="number"
+                value={editingEmployee.salary || ""}
+                onChange={(e) => setEditingEmployee({ ...editingEmployee, salary: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                step="0.01"
+                min="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+              <select
+                value={editingEmployee.manager_id}
+                onChange={(e) => setEditingEmployee({ ...editingEmployee, manager_id: parseInt(e.target.value) })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              >
+                <option value={0}>Manager</option>
+                <option value={1}>Employee</option>
+              </select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setEditingEmployee(null)}>Cancel</Button>
+              <Button onClick={handleUpdateEmployee}>Save Changes</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Performance Modal */}
+      <Modal 
+        isOpen={!!selectedEmployee} 
+        onClose={() => { setSelectedEmployee(null); setPerformance(null); }} 
+        title={selectedEmployee ? `Performance: ${selectedEmployee.name}` : ""}
+      >
+        {selectedEmployee && performance && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg text-center">
+                <p className="text-sm text-gray-600">Total Orders</p>
+                <p className="text-2xl font-bold text-blue-600">{performance.total_orders}</p>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg text-center">
+                <p className="text-sm text-gray-600">Total Sales</p>
+                <p className="text-2xl font-bold text-green-600">${performance.total_sales.toFixed(2)}</p>
+              </div>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-gray-600">Average per Order</p>
+              <p className="text-xl font-bold text-gray-700">
+                ${performance.total_orders > 0 
+                  ? (performance.total_sales / performance.total_orders).toFixed(2) 
+                  : "0.00"}
+              </p>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+};
+
+// ==================== MAIN MANAGER PAGE ====================
 
 function ManagerPage() {
+  const [activeTab, setActiveTab] = useState('trends');
+
   return (
-    <div>
-      <h1>Manager Placeholder Page</h1>
-      <p>Welcome, Manager! This page is under construction.</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-pink-50">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header */}
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">Manager Dashboard</h1>
+          <p className="text-gray-500 mt-1">
+            Analyze sales trends, manage inventory, and oversee employees
+          </p>
+        </header>
+
+        {/* Tabs */}
+        <div className="border-b mb-6">
+          <div className="flex gap-2 overflow-x-auto">
+            <TabButton 
+              active={activeTab === 'trends'} 
+              onClick={() => setActiveTab('trends')}
+              icon={BarChart3}
+            >
+              Order Trends
+            </TabButton>
+            <TabButton 
+              active={activeTab === 'inventory'} 
+              onClick={() => setActiveTab('inventory')}
+              icon={Package}
+            >
+              Inventory
+            </TabButton>
+            <TabButton 
+              active={activeTab === 'employees'} 
+              onClick={() => setActiveTab('employees')}
+              icon={Users}
+            >
+              Employees
+            </TabButton>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {activeTab === 'trends' && <OrderTrendsTab />}
+          {activeTab === 'inventory' && <InventoryTab />}
+          {activeTab === 'employees' && <EmployeesTab />}
+        </motion.div>
+      </div>
     </div>
   );
 }
