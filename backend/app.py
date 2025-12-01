@@ -23,7 +23,7 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "a-super-secret-key")
 # Proper CORS configuration for authentication
 CORS(app, 
      supports_credentials=True,
-     origins=["http://localhost:5173", "http://localhost:5174", os.getenv("FRONTEND_URL", "http://localhost:5173"), "https://project3-gang-63-abra.vercel.app/"],
+     origins=["http://localhost:5173", "http://localhost:5174", os.getenv("FRONTEND_URL", "http://localhost:5173"), "https://project3-gang-63-abra.vercel.app"],
      allow_headers=["Content-Type", "Authorization"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 

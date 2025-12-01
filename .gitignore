@@ -7,3 +7,4 @@ my-app/node_modules/
 .env
 backend/.env
 my-app/.env
+.vercel
