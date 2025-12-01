@@ -9,7 +9,7 @@ import './App.css'; // This file will now hold styles for all components
 // Import the API_BASE configuration
 const API_BASE = import.meta.env.VITE_API_URL 
   ? import.meta.env.VITE_API_URL.trim().replace(/\/$/, "")
-  : "https://backend-hazel-nine-20.vercel.app/api";
+  : "https://abra-backend.vercel.app/api";
 
 function App() {
   // This state will control which page is visible.
