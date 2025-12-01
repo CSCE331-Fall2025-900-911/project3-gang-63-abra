@@ -75,6 +75,7 @@ export async function submitOrder(order) {
   if (!res.ok) throw new Error("Failed to submit order");
   return await res.json(); // { orderId, subtotal, tax, total }
 // ==================== ORDER HISTORY API ====================
+}
 
 export async function fetchOrders(startDate = null, endDate = null) {
   let url = buildUrl("/orders");
