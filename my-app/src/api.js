@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE = "https://backend-hazel-nine-20.vercel.app/api";
+const DEFAULT_API_BASE = "https://abra-backend.vercel.app/api";
 
 const API_BASE =
   (import.meta?.env?.VITE_API_URL && import.meta.env.VITE_API_URL.trim().replace(/\/$/, "")) ||
