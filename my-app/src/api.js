@@ -11,6 +11,7 @@ export async function fetchMenu() {
   const res = await fetch(buildUrl("/menu"));
 
   if (!res.ok) throw new Error("Failed to load menu");
+
   const data = await res.json();
   return Array.isArray(data)
     ? data.map((it) => ({

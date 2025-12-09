@@ -1,7 +1,10 @@
 import os
 from contextlib import contextmanager
 from urllib.parse import urlencode
+<<<<<<< HEAD
 from datetime import datetime, timedelta
+=======
+>>>>>>> c8914267a1a34f7110a9e9184aaba0ad8788dad8
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, request, session, url_for
@@ -9,6 +12,12 @@ from flask import Flask, jsonify, redirect, request, session, url_for
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from authlib.integrations.flask_client import OAuth
+<<<<<<< HEAD
+=======
+
+from flask_cors import CORS
+from authlib.integrations.flask_client import OAuth
+>>>>>>> c8914267a1a34f7110a9e9184aaba0ad8788dad8
 
 from flask_cors import CORS
 

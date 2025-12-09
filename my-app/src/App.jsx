@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useMemo } from 'react';
+=======
+import React, { useState, useEffect } from 'react';
+>>>>>>> c8914267a1a34f7110a9e9184aaba0ad8788dad8
 import CustomerKiosk from './CustomerKiosk.jsx'; // Import the kiosk
 import LoginPage from './loginPage.jsx';       // Import the login page
 import ManagerPage from './ManagerPage.jsx';   // Import the manager page
@@ -57,6 +61,23 @@ function App() {
     loadUser();
   }, []); // The empty array means this effect runs once on component mount
 
+  useEffect(() => {
+    // Check if the user is already logged in
+    fetch('/api/user', {
+      credentials: 'include'  // Important: include credentials for session cookies
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data && !data.error) {
+          // If the user is logged in, go to the manager page
+          handleLoginSuccess();
+        }
+      })
+      .catch(() => {
+        // If there's an error, do nothing (stay on the kiosk/login page)
+      });
+  }, []); // The empty array means this effect runs once on component mount
+
   // This function will be passed to the LoginPage
   // so it can tell the App to switch views after a successful login.
   const handleLoginSuccess = (userData = user) => {
@@ -92,6 +113,7 @@ function App() {
   // Simple navigation bar to switch between views (for testing)
   const Navigation = () => (
     <nav className="navigation-bar">
+<<<<<<< HEAD
       <div className="nav-links">
         <button onClick={() => navigate('login')}>Login Page</button>
         <button onClick={() => navigate('kiosk')}>Customer Kiosk</button>
@@ -110,6 +132,12 @@ function App() {
           </button>
         )}
       </div>
+=======
+      <button onClick={() => navigate('login')}>Login Page</button>
+      <button onClick={() => navigate('kiosk')}>Customer Kiosk</button>
+      <button onClick={() => navigate('manager')}>Manager Page</button>
+      <button onClick={() => navigate('employee')}>Employee Panel</button>
+>>>>>>> c8914267a1a34f7110a9e9184aaba0ad8788dad8
       {/* You can add more buttons here as you build the Manager/Cashier views */}
     </nav>
   );
@@ -122,9 +150,15 @@ function App() {
       case 'kiosk':
         return <CustomerKiosk />;
       case 'manager':
+<<<<<<< HEAD
         return isManager ? <ManagerPage /> : <LoginPage onLoginSuccess={handleLoginSuccess} />;
       case 'employee':
         return isManager ? <EmployeePanel /> : <LoginPage onLoginSuccess={handleLoginSuccess} />;
+=======
+        return <ManagerPage />;
+      case 'employee':
+        return <EmployeePanel />;
+>>>>>>> c8914267a1a34f7110a9e9184aaba0ad8788dad8
       default:
         return <CustomerKiosk />;
     }
