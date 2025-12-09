@@ -259,3 +259,10 @@ export async function fetchCustomReport(query) {
   if (!res.ok) throw new Error("Failed to execute custom report");
   return res.json();
 }
+
+export async function fetchWeather(city = "College Station") {
+  const res = await fetch(buildUrl(`/weather?city=${encodeURIComponent(city)}`));
+
+  if (!res.ok) throw new Error("Failed to load weather");
+  return res.json();
+}
