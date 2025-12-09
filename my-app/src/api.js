@@ -1,8 +1,6 @@
-const DEFAULT_API_BASE = "https://abra-backend.vercel.app/api";
-
-const API_BASE =
-  (import.meta?.env?.VITE_API_URL && import.meta.env.VITE_API_URL.trim().replace(/\/$/, "")) ||
-  DEFAULT_API_BASE;
+// Prefer the Vite-style env var and fall back to the deployed backend
+const rawBase = import.meta.env.VITE_API_URL || "https://abra-backend.vercel.app/api";
+const API_BASE = rawBase.trim().replace(/\/$/, "");
 
 const buildUrl = (path = "") => {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
