@@ -126,24 +126,33 @@ def google_callback():
     try:
         token = google.authorize_access_token()
         
-        # Use the token to get user info
+        # Get user info
         resp = google.get('https://www.googleapis.com/oauth2/v2/userinfo')
         user_info = resp.json()
-        
-        # Check if the email is in the allowed list
+
         user_email = user_info.get('email', '').lower()
-        if user_email not in [email.lower() for email in ALLOWED_EMAILS]:
-            app.logger.warning(f"Unauthorized login attempt from: {user_email}")
-            return f"<h1>Access Denied</h1><p>Your email ({user_email}) is not authorized to access this system.</p>", 403
-        
-        session['user'] = user_info
-        app.logger.info(f"User logged in successfully: {user_email}")
-        
-        # Redirect to the frontend, which can then decide where to take the user.
+        allowed = [email.lower() for email in ALLOWED_EMAILS]
+
+        # Assign roles
+        if user_email in allowed:
+            role = "manager"
+        else:
+            role = "customer"
+
+        # Store in session
+        session['user'] = {
+            **user_info,
+            "role": role
+        }
+
+        app.logger.info(f"User logged in: {user_email} | role = {role}")
+
         return redirect(os.getenv("FRONTEND_URL", "http://localhost:5173/"))
+
     except Exception as e:
         app.logger.error(f"Error during Google callback: {str(e)}")
         return f"<h1>Authentication Error</h1><p>An error occurred during login: {str(e)}</p>", 500
+
 
 @app.route('/api/user')
 def get_user():
