@@ -3,6 +3,14 @@ import { ShoppingCart, CheckCircle2, Check, Minus, Plus, X } from "lucide-react"
 
 import { motion } from "framer-motion";
 import { fetchMenu } from "./api";
+import { itemImages, fallbackImage } from "./assets/images";
+
+const getItemImage = (name) => {
+  if (!name) return fallbackImage;
+  const key = name.toLowerCase().replace(/\s+/g, " ");
+  return itemImages[key] || fallbackImage;
+};
+
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -415,7 +423,13 @@ export default function CustomerKiosk() {
                       }}
                       className="relative h-full overflow-hidden border border-white/60 bg-white/80 shadow-lg backdrop-blur rounded-3xl transition duration-300 hover:-translate-y-2 hover:shadow-2xl cursor-pointer"
                     >
-                      <div className="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-pink-200/40" />
+                      {/* Image */}
+                      <img
+                        src={getItemImage(item.name)}
+                        alt={item.name}
+                        className="w-full h-40 object-cover rounded-t-2xl"
+                      />
+
                       <CardContent className="relative flex h-full flex-col gap-4 text-left select-text">
                         <div className="space-y-2">
                           <p className="text-[11px] tracking-[0.3em] text-pink-400 font-semibold">{item.category || "Drink"}</p>
@@ -506,6 +520,11 @@ export default function CustomerKiosk() {
           >
             <div className="flex flex-wrap items-start justify-between gap-6">
               <div className="flex-1 min-w-[240px] space-y-2">
+                <img
+                  src={getItemImage(selectedDrink.name)}
+                  alt={selectedDrink.name}
+                  className="w-full h-56 object-cover rounded-2xl mb-4"
+                />
                 <p className="text-xs uppercase tracking-[0.4em] text-pink-500 font-semibold">
                   {selectedDrink.category || "Drink"}
                 </p>
