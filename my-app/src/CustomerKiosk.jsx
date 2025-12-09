@@ -45,7 +45,6 @@ export default function CustomerKiosk() {
   const [error, setError] = useState("");
   const [cart, setCart] = useState([]);
   const [phase, setPhase] = useState("browsing");
-  const [category, setCategory] = useState("All");
   const [selectedDrink, setSelectedDrink] = useState(null);
   const [selectedToppings, setSelectedToppings] = useState([]);
   const [iceLevel, setIceLevel] = useState("Regular Ice");
@@ -58,6 +57,7 @@ export default function CustomerKiosk() {
     (async () => {
       try {
         const data = await fetchMenu();
+        console.log("Fetched items:", data); 
         if (mounted) setItems(data);
       } catch (e) {
         if (mounted) {
@@ -128,17 +128,19 @@ export default function CustomerKiosk() {
   const drinks = useMemo(() => items.filter((it) => !it.isTopping), [items]);
   const toppings = useMemo(() => items.filter((it) => it.isTopping), [items]);
 
-  const categories = useMemo(() => {
-    const set = new Set(["All"]);
-    drinks.forEach((it) => {
-      if (it.category) set.add(it.category);
-    });
-    return Array.from(set);
-  }, [drinks]);
+  const categories = [
+    { label: "All", value: "all" },
+    { label: "Fruit Tea", value: "fruit" },
+    { label: "Blended", value: "blended" },
+    { label: "Seasonal", value: "seasonal" },
+  ];
+
+  const [category, setCategory] = useState("all"); // lowercase
 
   const filtered = useMemo(() => {
-    if (category === "All") return drinks;
-    return drinks.filter((it) => it.category === category);
+    if (category === "all") return drinks;
+    console.log("Filtering drinks for category:", category);
+    return drinks.filter((item) => (item.category || "").toLowerCase() === category);
   }, [drinks, category]);
 
   const makeLineKey = (drink, toppingSelections = []) => {
@@ -324,15 +326,15 @@ export default function CustomerKiosk() {
               <div className="flex flex-wrap gap-3">
                 {categories.map((c) => (
                   <button
-                    key={c}
-                    onClick={() => setCategory(c)}
+                    key={c.value}
+                    onClick={() => setCategory(c.value)}
                     className={`px-4 py-2 rounded-full text-sm font-medium shadow-sm border backdrop-blur ${
-                      category === c
+                      category === c.value
                         ? "bg-pink-500 text-white border-pink-500"
                         : "bg-white/80 text-slate-600 border-white/50 hover:border-pink-200"
                     }`}
                   >
-                    {c}
+                    {c.label}
                   </button>
                 ))}
               </div>
