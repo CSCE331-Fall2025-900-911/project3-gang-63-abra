@@ -14,7 +14,8 @@ import {
   DollarSign,
   ShoppingBag,
   Clock,
-  FileText
+  FileText,
+  Menu
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
@@ -38,6 +39,10 @@ import {
   fetchPeakSalesDays,
   fetchProductUsageReport,
   fetchCustomReport,
+  fetchMenu,
+  addMenuItem,
+  updateMenuItem,
+  deleteMenuItem,
 } from './api';
 
 // ==================== REUSABLE COMPONENTS ====================
@@ -1274,6 +1279,313 @@ const ReportsTab = () => {
   );
 };
 
+// ==================== MENU MANAGEMENT TAB ====================
+
+const MenuManagementTab = () => {
+  const [menuItems, setMenuItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [newItem, setNewItem] = useState({ name: "", price: "", is_topping: false });
+
+  const loadMenu = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await fetchMenu();
+      setMenuItems(data);
+    } catch (e) {
+      setError("Failed to load menu items");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMenu();
+  }, []);
+
+  const handleAddItem = async () => {
+    if (!newItem.name.trim() || !newItem.price) {
+      setError("Name and price are required");
+      return;
+    }
+    try {
+      await addMenuItem(newItem.name, parseFloat(newItem.price), newItem.is_topping);
+      setNewItem({ name: "", price: "", is_topping: false });
+      setShowAddModal(false);
+      loadMenu();
+    } catch (e) {
+      setError("Failed to add menu item");
+    }
+  };
+
+  const handleUpdateItem = async () => {
+    if (!editingItem || !editingItem.name.trim() || !editingItem.price) {
+      setError("Name and price are required");
+      return;
+    }
+    try {
+      await updateMenuItem(editingItem.id, {
+        name: editingItem.name,
+        price: parseFloat(editingItem.price),
+        is_topping: editingItem.isTopping
+      });
+      setEditingItem(null);
+      loadMenu();
+    } catch (e) {
+      setError("Failed to update menu item");
+    }
+  };
+
+  const handleDeleteItem = async (itemId) => {
+    if (!confirm("Are you sure you want to delete this menu item?")) return;
+    try {
+      await deleteMenuItem(itemId);
+      loadMenu();
+    } catch (e) {
+      setError("Failed to delete menu item");
+    }
+  };
+
+  if (loading) {
+    return <div className="flex justify-center py-12"><RefreshCw className="w-8 h-8 animate-spin text-pink-500" /></div>;
+  }
+
+  // Separate drinks and toppings
+  const drinks = menuItems.filter(item => !item.isTopping);
+  const toppings = menuItems.filter(item => item.isTopping);
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="bg-red-100 text-red-700 px-4 py-3 rounded-lg">{error}</div>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard 
+          title="Total Items" 
+          value={menuItems.length} 
+          icon={Menu}
+          color="pink"
+        />
+        <StatCard 
+          title="Drinks" 
+          value={drinks.length} 
+          icon={ShoppingBag}
+          color="blue"
+        />
+        <StatCard 
+          title="Toppings" 
+          value={toppings.length} 
+          icon={Package}
+          color="orange"
+        />
+      </div>
+
+      {/* Controls */}
+      <div className="flex justify-end gap-2">
+        <Button onClick={() => setShowAddModal(true)}>
+          <Plus className="w-4 h-4" />
+          Add Menu Item
+        </Button>
+        <Button onClick={loadMenu} variant="secondary">
+          <RefreshCw className="w-4 h-4" />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Drinks Section */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <ShoppingBag className="w-5 h-5" />
+          Drinks ({drinks.length})
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b bg-gray-50">
+                <th className="text-left py-3 px-4">ID</th>
+                <th className="text-left py-3 px-4">Name</th>
+                <th className="text-right py-3 px-4">Price</th>
+                <th className="text-center py-3 px-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {drinks.map(item => (
+                <tr key={item.id} className="border-b hover:bg-gray-50">
+                  <td className="py-3 px-4 text-gray-500">{item.id}</td>
+                  <td className="py-3 px-4 font-medium">{item.name}</td>
+                  <td className="py-3 px-4 text-right text-green-600 font-semibold">
+                    ${item.price.toFixed(2)}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => setEditingItem({...item})}
+                        className="p-1 text-blue-500 hover:bg-blue-50 rounded"
+                        title="Edit"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="p-1 text-red-500 hover:bg-red-50 rounded"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Toppings Section */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Package className="w-5 h-5" />
+          Toppings ({toppings.length})
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b bg-gray-50">
+                <th className="text-left py-3 px-4">ID</th>
+                <th className="text-left py-3 px-4">Name</th>
+                <th className="text-right py-3 px-4">Price</th>
+                <th className="text-center py-3 px-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {toppings.map(item => (
+                <tr key={item.id} className="border-b hover:bg-gray-50">
+                  <td className="py-3 px-4 text-gray-500">{item.id}</td>
+                  <td className="py-3 px-4 font-medium">{item.name}</td>
+                  <td className="py-3 px-4 text-right text-green-600 font-semibold">
+                    ${item.price.toFixed(2)}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => setEditingItem({...item})}
+                        className="p-1 text-blue-500 hover:bg-blue-50 rounded"
+                        title="Edit"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="p-1 text-red-500 hover:bg-red-50 rounded"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Add Item Modal */}
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Menu Item">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
+            <input
+              type="text"
+              value={newItem.name}
+              onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              placeholder="e.g., Classic Milk Tea"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+            <input
+              type="number"
+              value={newItem.price}
+              onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              placeholder="e.g., 5.99"
+              step="0.01"
+              min="0"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="newIsTopping"
+              checked={newItem.is_topping}
+              onChange={(e) => setNewItem({ ...newItem, is_topping: e.target.checked })}
+              className="rounded"
+            />
+            <label htmlFor="newIsTopping" className="text-sm font-medium text-gray-700">
+              This is a topping/add-on
+            </label>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setShowAddModal(false)}>Cancel</Button>
+            <Button onClick={handleAddItem}>Add Item</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Item Modal */}
+      <Modal isOpen={!!editingItem} onClose={() => setEditingItem(null)} title="Edit Menu Item">
+        {editingItem && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
+              <input
+                type="text"
+                value={editingItem.name}
+                onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+              <input
+                type="number"
+                value={editingItem.price}
+                onChange={(e) => setEditingItem({ ...editingItem, price: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                step="0.01"
+                min="0"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="editIsTopping"
+                checked={editingItem.isTopping}
+                onChange={(e) => setEditingItem({ ...editingItem, isTopping: e.target.checked })}
+                className="rounded"
+              />
+              <label htmlFor="editIsTopping" className="text-sm font-medium text-gray-700">
+                This is a topping/add-on
+              </label>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setEditingItem(null)}>Cancel</Button>
+              <Button onClick={handleUpdateItem}>Save Changes</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+};
+
 // ==================== MAIN MANAGER PAGE ====================
 
 function ManagerPage() {
@@ -1321,6 +1633,13 @@ function ManagerPage() {
             >
               Reports
             </TabButton>
+            <TabButton 
+              active={activeTab === 'menu'} 
+              onClick={() => setActiveTab('menu')}
+              icon={Menu}
+            >
+              Menu Management
+            </TabButton>
           </div>
         </div>
 
@@ -1335,6 +1654,7 @@ function ManagerPage() {
           {activeTab === 'inventory' && <InventoryTab />}
           {activeTab === 'employees' && <EmployeesTab />}
           {activeTab === 'reports' && <ReportsTab />}
+          {activeTab === 'menu' && <MenuManagementTab />}
         </motion.div>
       </div>
     </div>
