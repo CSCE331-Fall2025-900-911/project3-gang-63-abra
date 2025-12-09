@@ -289,17 +289,18 @@ export default function CustomerKiosk() {
                 </label>
                 <select
                   id="language-select"
-                  className="rounded-xl border border-white/60 bg-white/90 px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
+                  className="notranslate rounded-xl border border-white/60 bg-white/90 px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
                   value={currentLanguage}
                   onChange={(e) => changeLanguage(e.target.value)}
                   disabled={!translatorReady}
                 >
                   {languages.map((lang) => (
-                    <option key={lang.code} value={lang.code}>
+                    <option key={lang.code} value={lang.code} className="notranslate">
                       {lang.label}
                     </option>
                   ))}
                 </select>
+
               </div>
               {!translatorReady && <p className="mt-2 text-xs text-amber-600">Loading Google Translate…</p>}
             </div>
