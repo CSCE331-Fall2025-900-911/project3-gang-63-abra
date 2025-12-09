@@ -92,27 +92,26 @@ function App() {
   // Simple navigation bar to switch between views (for testing)
   const Navigation = () => (
     <nav className="navigation-bar">
-      <button onClick={() => navigate('login')}>Login Page</button>
-      <button onClick={() => navigate('kiosk')}>Customer Kiosk</button>
-      {isManager && (
-        <>
-          <button onClick={() => navigate('manager')}>Manager Page</button>
-          <button onClick={() => navigate('employee')}>Employee Panel</button>
-        </>
-      )}
+      <div className="nav-links">
+        <button onClick={() => navigate('login')}>Login Page</button>
+        <button onClick={() => navigate('kiosk')}>Customer Kiosk</button>
+        {isManager && (
+          <>
+            <button onClick={() => navigate('manager')}>Manager Page</button>
+            <button onClick={() => navigate('employee')}>Employee Panel</button>
+          </>
+        )}
+      </div>
+      <div className="account-section">
+        <span>{user?.email ? `Signed in as ${user.email}` : 'Not signed in'}</span>
+        {user?.email && (
+          <button className="logout-btn" onClick={handleLogout}>
+            Sign out
+          </button>
+        )}
+      </div>
       {/* You can add more buttons here as you build the Manager/Cashier views */}
     </nav>
-  );
-
-  const AccountBar = () => (
-    <div className="account-bar">
-      <span>{user?.email ? `Signed in as ${user.email}` : 'Not signed in'}</span>
-      {user?.email && (
-        <button className="logout-btn" onClick={handleLogout}>
-          Sign out
-        </button>
-      )}
-    </div>
   );
 
   // This function decides which component to show
@@ -133,7 +132,6 @@ function App() {
 
   return (
     <div className="app-container">
-      <AccountBar />
       <Navigation />
       {renderCurrentPage()}
       <AccessibilityPanel />

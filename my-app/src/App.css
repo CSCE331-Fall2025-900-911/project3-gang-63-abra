@@ -54,13 +54,20 @@
 /* Styles for the test navigation bar */
 .navigation-bar {
   background-color: #1a1a1a;
-  padding: 10px;
-  text-align: center;
+  padding: 10px 12px;
   border-radius: 8px;
   margin-bottom: 20px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
-.navigation-bar button {
+.nav-links {
+  display: flex;
+  align-items: center;
+}
+.nav-links button {
   margin: 0 10px;
   background-color: #333;
   color: white;
@@ -69,19 +76,16 @@
   border-radius: 6px;
   cursor: pointer;
 }
-.navigation-bar button:hover {
+.nav-links button:hover {
   background-color: #535bf2;
 }
 
-.account-bar {
+.account-section {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #0f172a;
+  gap: 10px;
   color: #e2e8f0;
-  padding: 8px 12px;
-  border-radius: 8px;
-  margin-bottom: 10px;
 }
 
 .logout-btn {
