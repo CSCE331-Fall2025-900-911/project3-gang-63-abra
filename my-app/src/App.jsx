@@ -154,7 +154,6 @@ function App() {
       <Navigation weather={weather} />
       {renderCurrentPage()}
       <AccessibilityPanel />
-      <AccessibilityPanel />
     </div>
   );
 }
