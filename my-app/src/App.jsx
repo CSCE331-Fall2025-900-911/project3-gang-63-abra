@@ -63,7 +63,7 @@ function App() {
     const nextUser = userData || user;
     setUser(nextUser);
     if (nextUser?.email && ALLOWED_EMAILS.includes(nextUser.email.toLowerCase())) {
-      setCurrentPage('manager');
+      setCurrentPage('employee');
     } else {
       setCurrentPage('kiosk');
     }
