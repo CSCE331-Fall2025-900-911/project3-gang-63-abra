@@ -76,6 +76,8 @@ export default function CustomerKiosk() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    window.__googleTranslateInitialized = false;
+
     const scriptId = "google-translate-script";
     const elementId = "google_translate_element";
 
@@ -90,40 +92,38 @@ export default function CustomerKiosk() {
 
     const initTranslateElement = () => {
       if (!window.google || !window.google.translate) return;
-      if (!window.__googleTranslateInitialized) {
-        new window.google.translate.TranslateElement(
-          {
-            pageLanguage: "en",
-            includedLanguages: languages.map((l) => l.code).join(","),
-            autoDisplay: false,
-          },
-          elementId
-        );
-        window.__googleTranslateInitialized = true;
-      }
-      ensureSelectReady();
+
+      new window.google.translate.TranslateElement(
+        {
+          pageLanguage: "en",
+          includedLanguages: languages.map((l) => l.code).join(","),
+          autoDisplay: false,
+        },
+        elementId
+      );
+
+      window.__googleTranslateInitialized = true;
     };
 
     window.googleTranslateElementInit = initTranslateElement;
 
-    if (!document.getElementById(scriptId)) {
+    if (window.google && window.google.translate) {
+      initTranslateElement();
+    } else if (!document.getElementById(scriptId)) {
       const script = document.createElement("script");
       script.id = scriptId;
       script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
       script.async = true;
       document.body.appendChild(script);
-    } else if (window.google && window.google.translate) {
-      initTranslateElement();
     }
 
     const interval = setInterval(() => {
-      if (ensureSelectReady()) {
-        clearInterval(interval);
-      }
+      if (ensureSelectReady()) clearInterval(interval);
     }, 500);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [languages]);
+
 
   const drinks = useMemo(() => items.filter((it) => !it.isTopping), [items]);
   const toppings = useMemo(() => items.filter((it) => it.isTopping), [items]);
