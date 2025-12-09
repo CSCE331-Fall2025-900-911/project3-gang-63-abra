@@ -203,3 +203,10 @@ export async function submitOrder(order) {
   if (!res.ok) throw new Error("Failed to submit order");
   return await res.json(); // { orderId, subtotal, tax, total }
 }
+
+export async function fetchWeather(city = "College Station") {
+  const res = await fetch(buildUrl(`/weather?city=${encodeURIComponent(city)}`));
+
+  if (!res.ok) throw new Error("Failed to load weather");
+  return res.json();
+}

@@ -12,6 +12,8 @@ from authlib.integrations.flask_client import OAuth
 
 from flask_cors import CORS
 
+import requests
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -780,6 +782,28 @@ def delete_menu_item(item_id):
         return jsonify({"error": "Unable to delete menu item"}), 500
 
 
+@app.get("/api/weather")
+def get_weather():
+    city = request.args.get("city", "College Station")
+    api_key = os.getenv("WEATHER_API_KEY")
+
+    if not api_key:
+        return jsonify({"error": "Weather API key is not configured"}), 500
+
+    url = (
+        "https://api.openweathermap.org/data/2.5/weather?"
+        f"q={city}&appid={api_key}&units=metric"
+    )
+
+    try:
+        resp = requests.get(url)
+        data = resp.json()
+        return jsonify(data)
+    except Exception as e:
+        app.logger.exception("Weather fetch error: %s", e)
+        return jsonify({"error": "Failed to fetch weather"}), 500
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     app.run(host="0.0.0.0", port=port, debug=os.getenv("FLASK_DEBUG") == "1")
+

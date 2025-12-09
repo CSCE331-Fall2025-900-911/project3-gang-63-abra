@@ -52,6 +52,7 @@ export default function CustomerKiosk() {
   const [sugarLevel, setSugarLevel] = useState("100%");
   const [translatorReady, setTranslatorReady] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
+  const [weather, setWeather] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -124,6 +125,17 @@ export default function CustomerKiosk() {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+  (async () => {
+    try {
+      const data = await fetchWeather("College Station");
+      setWeather(data);
+    } catch (err) {
+      console.error("Weather fetch failed:", err);
+    }
+  })();
+}, []);
 
   const drinks = useMemo(() => items.filter((it) => !it.isTopping), [items]);
   const toppings = useMemo(() => items.filter((it) => it.isTopping), [items]);
@@ -587,6 +599,14 @@ export default function CustomerKiosk() {
               </Button>
             </div>
           </motion.div>
+        )}
+
+        {weather && (
+          <div className="fixed bottom-4 right-4 z-50">
+            <Button className="bg-blue-500 text-white shadow-lg hover:bg-blue-600">
+              {weather.main.temp}° - {weather.weather[0].main}
+            </Button>
+          </div>
         )}
       </div>
     </div>
