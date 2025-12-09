@@ -86,7 +86,8 @@ def fetch_menu_items():
           item_id AS id,
           name,
           price,
-          is_topping
+          is_topping,
+          category
         FROM item
         ORDER BY name;
     """
