@@ -204,6 +204,62 @@ export async function submitOrder(order) {
   return await res.json(); // { orderId, subtotal, tax, total }
 }
 
+// ==================== REPORT API ====================
+
+export async function fetchXReport() {
+  const res = await fetch(buildUrl("/reports/x-report"));
+  if (!res.ok) throw new Error("Failed to load X-Report");
+  return res.json();
+}
+
+export async function fetchZReport(date = null) {
+  let url = buildUrl("/reports/z-report");
+  if (date) {
+    url += `?date=${date}`;
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to load Z-Report");
+  return res.json();
+}
+
+export async function fetchWeeklySalesHistory() {
+  const res = await fetch(buildUrl("/reports/weekly-sales"));
+  if (!res.ok) throw new Error("Failed to load weekly sales history");
+  return res.json();
+}
+
+export async function fetchHourlySalesHistory(date = null) {
+  let url = buildUrl("/reports/hourly-sales");
+  if (date) {
+    url += `?date=${date}`;
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to load hourly sales history");
+  return res.json();
+}
+
+export async function fetchPeakSalesDays(limit = 10) {
+  const res = await fetch(buildUrl(`/reports/peak-sales?limit=${limit}`));
+  if (!res.ok) throw new Error("Failed to load peak sales days");
+  return res.json();
+}
+
+export async function fetchProductUsageReport(startDate, endDate) {
+  const res = await fetch(buildUrl(`/reports/product-usage?start_date=${startDate}&end_date=${endDate}`));
+  if (!res.ok) throw new Error("Failed to load product usage report");
+  return res.json();
+}
+
+export async function fetchCustomReport(query) {
+  const res = await fetch(buildUrl("/reports/custom"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query }),
+  });
+  if (!res.ok) throw new Error("Failed to execute custom report");
+  return res.json();
+}
+
 export async function fetchWeather(city = "College Station") {
   const res = await fetch(buildUrl(`/weather?city=${encodeURIComponent(city)}`));
 

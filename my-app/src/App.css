@@ -54,13 +54,20 @@
 /* Styles for the test navigation bar */
 .navigation-bar {
   background-color: #1a1a1a;
-  padding: 10px;
-  text-align: center;
+  padding: 10px 12px;
   border-radius: 8px;
   margin-bottom: 20px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
-.navigation-bar button {
+.nav-links {
+  display: flex;
+  align-items: center;
+}
+.nav-links button {
   margin: 0 10px;
   background-color: #333;
   color: white;
@@ -69,8 +76,30 @@
   border-radius: 6px;
   cursor: pointer;
 }
-.navigation-bar button:hover {
+.nav-links button:hover {
   background-color: #535bf2;
+}
+
+.account-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  color: #e2e8f0;
+}
+
+.logout-btn {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  color: #e2e8f0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
 /* Styles for the login page container */

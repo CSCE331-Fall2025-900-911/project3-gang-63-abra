@@ -13,7 +13,9 @@ import {
   Calendar,
   DollarSign,
   ShoppingBag,
-  Clock
+  Clock,
+  FileText,
+  Menu
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
@@ -30,6 +32,17 @@ import {
   updateEmployee,
   deleteEmployee,
   fetchEmployeePerformance,
+  fetchXReport,
+  fetchZReport,
+  fetchWeeklySalesHistory,
+  fetchHourlySalesHistory,
+  fetchPeakSalesDays,
+  fetchProductUsageReport,
+  fetchCustomReport,
+  fetchMenu,
+  addMenuItem,
+  updateMenuItem,
+  deleteMenuItem,
 } from './api';
 
 // ==================== REUSABLE COMPONENTS ====================
@@ -749,6 +762,10 @@ const EmployeesTab = () => {
     return <div className="flex justify-center py-12"><RefreshCw className="w-8 h-8 animate-spin text-pink-500" /></div>;
   }
 
+  // Count managers and employees by role
+  const managerCount = employees.filter(e => e.role === 'Manager').length;
+  const employeeCount = employees.filter(e => e.role === 'Employee').length;
+
   return (
     <div className="space-y-6">
       {error && (
@@ -758,21 +775,21 @@ const EmployeesTab = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard 
-          title="Total Employees" 
+          title="Total Staff" 
           value={employees.length} 
           icon={Users}
           color="blue"
         />
         <StatCard 
           title="Managers" 
-          value={employees.filter(e => e.manager_id === 0).length} 
+          value={managerCount} 
           icon={Users}
           color="green"
         />
         <StatCard 
-          title="Avg Salary" 
-          value={`$${(employees.reduce((sum, e) => sum + (e.salary || 0), 0) / employees.length || 0).toFixed(2)}/hr`} 
-          icon={DollarSign}
+          title="Employees" 
+          value={employeeCount} 
+          icon={Users}
           color="pink"
         />
       </div>
@@ -793,7 +810,7 @@ const EmployeesTab = () => {
       <Card>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Users className="w-5 h-5" />
-          Employee List
+          Staff List
         </h3>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -816,11 +833,11 @@ const EmployeesTab = () => {
                   </td>
                   <td className="py-3 px-4 text-center">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      emp.manager_id === 0 
+                      emp.role === 'Manager'
                         ? 'bg-purple-100 text-purple-700' 
                         : 'bg-blue-100 text-blue-700'
                     }`}>
-                      {emp.manager_id === 0 ? 'Manager' : 'Employee'}
+                      {emp.role}
                     </span>
                   </td>
                   <td className="py-3 px-4">
@@ -974,6 +991,605 @@ const EmployeesTab = () => {
   );
 };
 
+// ==================== REPORTS TAB ====================
+
+const ReportsTab = () => {
+  const [activeReport, setActiveReport] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [reportData, setReportData] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [customQuery, setCustomQuery] = useState("");
+
+  const loadReport = async (reportType) => {
+    setLoading(true);
+    setError("");
+    setReportData(null);
+    setActiveReport(reportType);
+    
+    try {
+      let data;
+      switch (reportType) {
+        case 'x-report':
+          data = await fetchXReport();
+          break;
+        case 'z-report':
+          data = await fetchZReport(selectedDate);
+          break;
+        case 'weekly-sales':
+          data = await fetchWeeklySalesHistory();
+          break;
+        case 'hourly-sales':
+          data = await fetchHourlySalesHistory(selectedDate);
+          break;
+        case 'peak-sales':
+          data = await fetchPeakSalesDays(10);
+          break;
+        case 'product-usage':
+          data = await fetchProductUsageReport(startDate, endDate);
+          break;
+        default:
+          break;
+      }
+      setReportData(data);
+    } catch (e) {
+      setError(`Failed to load ${reportType}: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const executeCustomReport = async () => {
+    if (!customQuery.trim()) {
+      setError("Please enter a SQL query");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    setReportData(null);
+    setActiveReport('custom');
+    
+    try {
+      const data = await fetchCustomReport(customQuery);
+      setReportData(data);
+    } catch (e) {
+      setError(`Failed to execute custom report: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="bg-red-100 text-red-700 px-4 py-3 rounded-lg">{error}</div>
+      )}
+
+      {/* Report Selection Grid */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-4">Select a Report</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <Button
+            onClick={() => loadReport('x-report')}
+            variant={activeReport === 'x-report' ? 'primary' : 'secondary'}
+            className="w-full"
+          >
+            <FileText className="w-4 h-4" />
+            X-Report (Today's Hourly)
+          </Button>
+          <Button
+            onClick={() => loadReport('z-report')}
+            variant={activeReport === 'z-report' ? 'primary' : 'secondary'}
+            className="w-full"
+          >
+            <FileText className="w-4 h-4" />
+            Z-Report (End of Day)
+          </Button>
+          <Button
+            onClick={() => loadReport('weekly-sales')}
+            variant={activeReport === 'weekly-sales' ? 'primary' : 'secondary'}
+            className="w-full"
+          >
+            <Calendar className="w-4 h-4" />
+            Weekly Sales History
+          </Button>
+          <Button
+            onClick={() => loadReport('hourly-sales')}
+            variant={activeReport === 'hourly-sales' ? 'primary' : 'secondary'}
+            className="w-full"
+          >
+            <Clock className="w-4 h-4" />
+            Hourly Sales History
+          </Button>
+          <Button
+            onClick={() => loadReport('peak-sales')}
+            variant={activeReport === 'peak-sales' ? 'primary' : 'secondary'}
+            className="w-full"
+          >
+            <TrendingUp className="w-4 h-4" />
+            Top 10 Peak Sales Days
+          </Button>
+          <Button
+            onClick={() => loadReport('product-usage')}
+            variant={activeReport === 'product-usage' ? 'primary' : 'secondary'}
+            className="w-full"
+          >
+            <Package className="w-4 h-4" />
+            Product Usage Report
+          </Button>
+        </div>
+      </Card>
+
+      {/* Date/Range Selectors for specific reports */}
+      {(activeReport === 'z-report' || activeReport === 'hourly-sales') && (
+        <Card>
+          <h3 className="text-lg font-semibold mb-4">Select Date</h3>
+          <div className="flex items-center gap-4">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2"
+            />
+            <Button onClick={() => loadReport(activeReport)}>
+              <RefreshCw className="w-4 h-4" />
+              Refresh Report
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {activeReport === 'product-usage' && (
+        <Card>
+          <h3 className="text-lg font-semibold mb-4">Select Date Range</h3>
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Start Date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">End Date</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+            <Button onClick={() => loadReport('product-usage')}>
+              <RefreshCw className="w-4 h-4" />
+              Generate Report
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Custom Report Section */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-4">Custom SQL Report</h3>
+        <div className="space-y-3">
+          <textarea
+            value={customQuery}
+            onChange={(e) => setCustomQuery(e.target.value)}
+            placeholder="Enter your SQL query here..."
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm"
+            rows="4"
+          />
+          <Button onClick={executeCustomReport}>
+            <FileText className="w-4 h-4" />
+            Execute Custom Report
+          </Button>
+        </div>
+      </Card>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center py-12">
+          <RefreshCw className="w-8 h-8 animate-spin text-pink-500" />
+        </div>
+      )}
+
+      {/* Report Results */}
+      {!loading && reportData && (
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">
+              {activeReport === 'x-report' && "X-Report - Today's Hourly Sales"}
+              {activeReport === 'z-report' && `Z-Report - End of Day (${selectedDate})`}
+              {activeReport === 'weekly-sales' && "Weekly Sales History"}
+              {activeReport === 'hourly-sales' && `Hourly Sales History (${selectedDate})`}
+              {activeReport === 'peak-sales' && "Top 10 Peak Sales Days"}
+              {activeReport === 'product-usage' && "Product Usage Report"}
+              {activeReport === 'custom' && "Custom Report Results"}
+            </h3>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                const dataStr = JSON.stringify(reportData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${activeReport}-${new Date().toISOString()}.json`;
+                link.click();
+              }}
+            >
+              Export JSON
+            </Button>
+          </div>
+
+          {/* Display report based on type */}
+          <div className="overflow-x-auto">
+            {Array.isArray(reportData) ? (
+              reportData.length > 0 ? (
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      {Object.keys(reportData[0]).map((key) => (
+                        <th key={key} className="text-left py-2 px-3 font-semibold">
+                          {key.replace(/_/g, ' ').toUpperCase()}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.map((row, idx) => (
+                      <tr key={idx} className="border-b hover:bg-gray-50">
+                        {Object.values(row).map((val, valIdx) => (
+                          <td key={valIdx} className="py-2 px-3">
+                            {typeof val === 'number' && !Number.isInteger(val)
+                              ? val.toFixed(2)
+                              : String(val)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-gray-500 text-center py-4">No data available for this report</p>
+              )
+            ) : (
+              <div className="space-y-2">
+                {Object.entries(reportData).map(([key, value]) => (
+                  <div key={key} className="flex items-center justify-between py-2 border-b">
+                    <span className="font-medium">{key.replace(/_/g, ' ').toUpperCase()}</span>
+                    <span className="text-gray-700">
+                      {typeof value === 'number' && !Number.isInteger(value)
+                        ? value.toFixed(2)
+                        : typeof value === 'object'
+                        ? JSON.stringify(value)
+                        : String(value)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+// ==================== MENU MANAGEMENT TAB ====================
+
+const MenuManagementTab = () => {
+  const [menuItems, setMenuItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [newItem, setNewItem] = useState({ name: "", price: "", is_topping: false });
+
+  const loadMenu = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await fetchMenu();
+      setMenuItems(data);
+    } catch (e) {
+      setError("Failed to load menu items");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMenu();
+  }, []);
+
+  const handleAddItem = async () => {
+    if (!newItem.name.trim() || !newItem.price) {
+      setError("Name and price are required");
+      return;
+    }
+    try {
+      await addMenuItem(newItem.name, parseFloat(newItem.price), newItem.is_topping);
+      setNewItem({ name: "", price: "", is_topping: false });
+      setShowAddModal(false);
+      loadMenu();
+    } catch (e) {
+      setError("Failed to add menu item");
+    }
+  };
+
+  const handleUpdateItem = async () => {
+    if (!editingItem || !editingItem.name.trim() || !editingItem.price) {
+      setError("Name and price are required");
+      return;
+    }
+    try {
+      await updateMenuItem(editingItem.id, {
+        name: editingItem.name,
+        price: parseFloat(editingItem.price),
+        is_topping: editingItem.isTopping
+      });
+      setEditingItem(null);
+      loadMenu();
+    } catch (e) {
+      setError("Failed to update menu item");
+    }
+  };
+
+  const handleDeleteItem = async (itemId) => {
+    if (!confirm("Are you sure you want to delete this menu item?")) return;
+    try {
+      await deleteMenuItem(itemId);
+      loadMenu();
+    } catch (e) {
+      setError("Failed to delete menu item");
+    }
+  };
+
+  if (loading) {
+    return <div className="flex justify-center py-12"><RefreshCw className="w-8 h-8 animate-spin text-pink-500" /></div>;
+  }
+
+  // Separate drinks and toppings
+  const drinks = menuItems.filter(item => !item.isTopping);
+  const toppings = menuItems.filter(item => item.isTopping);
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="bg-red-100 text-red-700 px-4 py-3 rounded-lg">{error}</div>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard 
+          title="Total Items" 
+          value={menuItems.length} 
+          icon={Menu}
+          color="pink"
+        />
+        <StatCard 
+          title="Drinks" 
+          value={drinks.length} 
+          icon={ShoppingBag}
+          color="blue"
+        />
+        <StatCard 
+          title="Toppings" 
+          value={toppings.length} 
+          icon={Package}
+          color="orange"
+        />
+      </div>
+
+      {/* Controls */}
+      <div className="flex justify-end gap-2">
+        <Button onClick={() => setShowAddModal(true)}>
+          <Plus className="w-4 h-4" />
+          Add Menu Item
+        </Button>
+        <Button onClick={loadMenu} variant="secondary">
+          <RefreshCw className="w-4 h-4" />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Drinks Section */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <ShoppingBag className="w-5 h-5" />
+          Drinks ({drinks.length})
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b bg-gray-50">
+                <th className="text-left py-3 px-4">ID</th>
+                <th className="text-left py-3 px-4">Name</th>
+                <th className="text-right py-3 px-4">Price</th>
+                <th className="text-center py-3 px-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {drinks.map(item => (
+                <tr key={item.id} className="border-b hover:bg-gray-50">
+                  <td className="py-3 px-4 text-gray-500">{item.id}</td>
+                  <td className="py-3 px-4 font-medium">{item.name}</td>
+                  <td className="py-3 px-4 text-right text-green-600 font-semibold">
+                    ${item.price.toFixed(2)}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => setEditingItem({...item})}
+                        className="p-1 text-blue-500 hover:bg-blue-50 rounded"
+                        title="Edit"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="p-1 text-red-500 hover:bg-red-50 rounded"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Toppings Section */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Package className="w-5 h-5" />
+          Toppings ({toppings.length})
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b bg-gray-50">
+                <th className="text-left py-3 px-4">ID</th>
+                <th className="text-left py-3 px-4">Name</th>
+                <th className="text-right py-3 px-4">Price</th>
+                <th className="text-center py-3 px-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {toppings.map(item => (
+                <tr key={item.id} className="border-b hover:bg-gray-50">
+                  <td className="py-3 px-4 text-gray-500">{item.id}</td>
+                  <td className="py-3 px-4 font-medium">{item.name}</td>
+                  <td className="py-3 px-4 text-right text-green-600 font-semibold">
+                    ${item.price.toFixed(2)}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => setEditingItem({...item})}
+                        className="p-1 text-blue-500 hover:bg-blue-50 rounded"
+                        title="Edit"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="p-1 text-red-500 hover:bg-red-50 rounded"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Add Item Modal */}
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Menu Item">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
+            <input
+              type="text"
+              value={newItem.name}
+              onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              placeholder="e.g., Classic Milk Tea"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+            <input
+              type="number"
+              value={newItem.price}
+              onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              placeholder="e.g., 5.99"
+              step="0.01"
+              min="0"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="newIsTopping"
+              checked={newItem.is_topping}
+              onChange={(e) => setNewItem({ ...newItem, is_topping: e.target.checked })}
+              className="rounded"
+            />
+            <label htmlFor="newIsTopping" className="text-sm font-medium text-gray-700">
+              This is a topping/add-on
+            </label>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setShowAddModal(false)}>Cancel</Button>
+            <Button onClick={handleAddItem}>Add Item</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Item Modal */}
+      <Modal isOpen={!!editingItem} onClose={() => setEditingItem(null)} title="Edit Menu Item">
+        {editingItem && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
+              <input
+                type="text"
+                value={editingItem.name}
+                onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+              <input
+                type="number"
+                value={editingItem.price}
+                onChange={(e) => setEditingItem({ ...editingItem, price: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                step="0.01"
+                min="0"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="editIsTopping"
+                checked={editingItem.isTopping}
+                onChange={(e) => setEditingItem({ ...editingItem, isTopping: e.target.checked })}
+                className="rounded"
+              />
+              <label htmlFor="editIsTopping" className="text-sm font-medium text-gray-700">
+                This is a topping/add-on
+              </label>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setEditingItem(null)}>Cancel</Button>
+              <Button onClick={handleUpdateItem}>Save Changes</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+};
+
 // ==================== MAIN MANAGER PAGE ====================
 
 function ManagerPage() {
@@ -1014,6 +1630,20 @@ function ManagerPage() {
             >
               Employees
             </TabButton>
+            <TabButton 
+              active={activeTab === 'reports'} 
+              onClick={() => setActiveTab('reports')}
+              icon={FileText}
+            >
+              Reports
+            </TabButton>
+            <TabButton 
+              active={activeTab === 'menu'} 
+              onClick={() => setActiveTab('menu')}
+              icon={Menu}
+            >
+              Menu Management
+            </TabButton>
           </div>
         </div>
 
@@ -1027,6 +1657,8 @@ function ManagerPage() {
           {activeTab === 'trends' && <OrderTrendsTab />}
           {activeTab === 'inventory' && <InventoryTab />}
           {activeTab === 'employees' && <EmployeesTab />}
+          {activeTab === 'reports' && <ReportsTab />}
+          {activeTab === 'menu' && <MenuManagementTab />}
         </motion.div>
       </div>
     </div>
