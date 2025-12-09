@@ -780,6 +780,267 @@ def delete_menu_item(item_id):
         return jsonify({"error": "Unable to delete menu item"}), 500
 
 
+# ==================== REPORT ENDPOINTS ====================
+
+@app.get("/api/reports/x-report")
+def get_x_report():
+    """X-Report: Today's hourly sales breakdown."""
+    try:
+        today = datetime.now().date()
+        with _db_cursor() as cur:
+            # Hourly breakdown for today
+            cur.execute("""
+                SELECT 
+                    EXTRACT(HOUR FROM time) as hour,
+                    COUNT(*) as order_count,
+                    COALESCE(SUM(price), 0) as total_sales
+                FROM order_history
+                WHERE date = %s
+                GROUP BY EXTRACT(HOUR FROM time)
+                ORDER BY hour;
+            """, (today,))
+            rows = cur.fetchall()
+        
+        report = []
+        for row in rows:
+            report.append({
+                "hour": int(row["hour"]) if row["hour"] else 0,
+                "order_count": row["order_count"],
+                "total_sales": float(row["total_sales"])
+            })
+        return jsonify(report)
+    except Exception as exc:
+        app.logger.exception("Unable to generate X-Report: %s", exc)
+        return jsonify({"error": "Unable to generate X-Report"}), 500
+
+
+@app.get("/api/reports/z-report")
+def get_z_report():
+    """Z-Report: End of day summary for a specific date."""
+    date = request.args.get('date')
+    if not date:
+        date = datetime.now().date()
+    
+    try:
+        with _db_cursor() as cur:
+            # Total sales and orders for the day
+            cur.execute("""
+                SELECT 
+                    COUNT(*) as total_orders,
+                    COALESCE(SUM(price), 0) as total_sales,
+                    COALESCE(AVG(price), 0) as avg_order_value,
+                    COALESCE(MIN(price), 0) as min_order,
+                    COALESCE(MAX(price), 0) as max_order
+                FROM order_history
+                WHERE date = %s;
+            """, (date,))
+            summary = cur.fetchone()
+            
+            # Top items sold today
+            cur.execute("""
+                SELECT i.name, SUM(oj.quantity) as quantity_sold, 
+                       SUM(oj.quantity * i.price) as revenue
+                FROM order_junction oj
+                JOIN item i ON oj.item_id = i.item_id
+                JOIN order_history oh ON oj.order_id = oh.order_id
+                WHERE oh.date = %s
+                GROUP BY i.name
+                ORDER BY quantity_sold DESC
+                LIMIT 5;
+            """, (date,))
+            top_items = cur.fetchall()
+        
+        return jsonify({
+            "date": str(date),
+            "total_orders": summary["total_orders"],
+            "total_sales": float(summary["total_sales"]),
+            "avg_order_value": float(summary["avg_order_value"]),
+            "min_order": float(summary["min_order"]),
+            "max_order": float(summary["max_order"]),
+            "top_items": [{
+                "name": item["name"],
+                "quantity_sold": int(item["quantity_sold"]),
+                "revenue": float(item["revenue"])
+            } for item in top_items]
+        })
+    except Exception as exc:
+        app.logger.exception("Unable to generate Z-Report: %s", exc)
+        return jsonify({"error": "Unable to generate Z-Report"}), 500
+
+
+@app.get("/api/reports/weekly-sales")
+def get_weekly_sales():
+    """Weekly sales history for the last 8 weeks."""
+    try:
+        with _db_cursor() as cur:
+            cur.execute("""
+                SELECT 
+                    DATE_TRUNC('week', date) as week_start,
+                    COUNT(*) as order_count,
+                    COALESCE(SUM(price), 0) as total_sales
+                FROM order_history
+                WHERE date >= CURRENT_DATE - INTERVAL '8 weeks'
+                GROUP BY DATE_TRUNC('week', date)
+                ORDER BY week_start DESC;
+            """)
+            rows = cur.fetchall()
+        
+        report = []
+        for row in rows:
+            report.append({
+                "week_start": str(row["week_start"].date()) if row["week_start"] else None,
+                "order_count": row["order_count"],
+                "total_sales": float(row["total_sales"])
+            })
+        return jsonify(report)
+    except Exception as exc:
+        app.logger.exception("Unable to generate weekly sales report: %s", exc)
+        return jsonify({"error": "Unable to generate weekly sales report"}), 500
+
+
+@app.get("/api/reports/hourly-sales")
+def get_hourly_sales():
+    """Hourly sales history for a specific date."""
+    date = request.args.get('date')
+    if not date:
+        date = datetime.now().date()
+    
+    try:
+        with _db_cursor() as cur:
+            cur.execute("""
+                SELECT 
+                    EXTRACT(HOUR FROM time) as hour,
+                    COUNT(*) as order_count,
+                    COALESCE(SUM(price), 0) as total_sales,
+                    COALESCE(AVG(price), 0) as avg_order_value
+                FROM order_history
+                WHERE date = %s
+                GROUP BY EXTRACT(HOUR FROM time)
+                ORDER BY hour;
+            """, (date,))
+            rows = cur.fetchall()
+        
+        report = []
+        for row in rows:
+            report.append({
+                "hour": int(row["hour"]) if row["hour"] else 0,
+                "order_count": row["order_count"],
+                "total_sales": float(row["total_sales"]),
+                "avg_order_value": float(row["avg_order_value"])
+            })
+        return jsonify(report)
+    except Exception as exc:
+        app.logger.exception("Unable to generate hourly sales report: %s", exc)
+        return jsonify({"error": "Unable to generate hourly sales report"}), 500
+
+
+@app.get("/api/reports/peak-sales")
+def get_peak_sales_days():
+    """Top N peak sales days."""
+    limit = request.args.get('limit', 10, type=int)
+    
+    try:
+        with _db_cursor() as cur:
+            cur.execute("""
+                SELECT 
+                    date,
+                    COUNT(*) as order_count,
+                    COALESCE(SUM(price), 0) as total_sales
+                FROM order_history
+                GROUP BY date
+                ORDER BY total_sales DESC
+                LIMIT %s;
+            """, (limit,))
+            rows = cur.fetchall()
+        
+        report = []
+        for row in rows:
+            report.append({
+                "date": str(row["date"]) if row["date"] else None,
+                "order_count": row["order_count"],
+                "total_sales": float(row["total_sales"])
+            })
+        return jsonify(report)
+    except Exception as exc:
+        app.logger.exception("Unable to generate peak sales report: %s", exc)
+        return jsonify({"error": "Unable to generate peak sales report"}), 500
+
+
+@app.get("/api/reports/product-usage")
+def get_product_usage_report():
+    """Product usage report showing what sells together."""
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    if not start_date or not end_date:
+        return jsonify({"error": "start_date and end_date are required"}), 400
+    
+    try:
+        with _db_cursor() as cur:
+            # Most popular items
+            cur.execute("""
+                SELECT 
+                    i.name,
+                    i.is_topping,
+                    SUM(oj.quantity) as times_ordered,
+                    COUNT(DISTINCT oj.order_id) as unique_orders,
+                    SUM(oj.quantity * i.price) as revenue
+                FROM order_junction oj
+                JOIN item i ON oj.item_id = i.item_id
+                JOIN order_history oh ON oj.order_id = oh.order_id
+                WHERE oh.date BETWEEN %s AND %s
+                GROUP BY i.item_id, i.name, i.is_topping
+                ORDER BY times_ordered DESC;
+            """, (start_date, end_date))
+            rows = cur.fetchall()
+        
+        report = []
+        for row in rows:
+            report.append({
+                "name": row["name"],
+                "is_topping": row["is_topping"],
+                "times_ordered": int(row["times_ordered"]),
+                "unique_orders": row["unique_orders"],
+                "revenue": float(row["revenue"])
+            })
+        return jsonify(report)
+    except Exception as exc:
+        app.logger.exception("Unable to generate product usage report: %s", exc)
+        return jsonify({"error": "Unable to generate product usage report"}), 500
+
+
+@app.post("/api/reports/custom")
+def execute_custom_report():
+    """Execute a custom SQL query (READ-ONLY for safety)."""
+    data = request.get_json()
+    
+    if not data or 'query' not in data:
+        return jsonify({"error": "Query is required"}), 400
+    
+    query = data['query'].strip().upper()
+    
+    # Basic security: only allow SELECT statements
+    if not query.startswith('SELECT'):
+        return jsonify({"error": "Only SELECT queries are allowed"}), 400
+    
+    # Prevent dangerous operations
+    dangerous_keywords = ['DROP', 'DELETE', 'UPDATE', 'INSERT', 'ALTER', 'CREATE', 'TRUNCATE']
+    if any(keyword in query for keyword in dangerous_keywords):
+        return jsonify({"error": "Query contains forbidden keywords"}), 400
+    
+    try:
+        with _db_cursor() as cur:
+            cur.execute(data['query'])
+            rows = cur.fetchall()
+        
+        # Convert to list of dicts
+        result = [dict(row) for row in rows]
+        return jsonify(result)
+    except Exception as exc:
+        app.logger.exception("Unable to execute custom report: %s", exc)
+        return jsonify({"error": f"Query execution failed: {str(exc)}"}), 500
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     app.run(host="0.0.0.0", port=port, debug=os.getenv("FLASK_DEBUG") == "1")
