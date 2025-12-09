@@ -4,6 +4,20 @@ import { ShoppingCart, CheckCircle2, Check, Minus, Plus, X } from "lucide-react"
 import { motion } from "framer-motion";
 import { fetchMenu } from "./api";
 
+const LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "es", label: "Español" },
+  { code: "fr", label: "Français" },
+  { code: "de", label: "Deutsch" },
+  { code: "zh-CN", label: "简体中文" },
+  { code: "zh-TW", label: "繁體中文" },
+  { code: "ja", label: "日本語" },
+  { code: "ko", label: "한국어" },
+  { code: "vi", label: "Tiếng Việt" },
+  { code: "hi", label: "हिन्दी" },
+  { code: "ar", label: "العربية" },
+];
+
 const Button = ({ children, className = "", ...props }) => (
   <button
     className={`bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-semibold transition ${className}`}
@@ -52,6 +66,7 @@ export default function CustomerKiosk() {
   const [sugarLevel, setSugarLevel] = useState("100%");
   const [translatorReady, setTranslatorReady] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
+  const languages = LANGUAGES;
 
   useEffect(() => {
     let mounted = true;
@@ -187,20 +202,6 @@ export default function CustomerKiosk() {
     select.dispatchEvent(new Event("change"));
     setCurrentLanguage(lang);
   };
-
-  const languages = [
-    { code: "en", label: "English" },
-    { code: "es", label: "Español" },
-    { code: "fr", label: "Français" },
-    { code: "de", label: "Deutsch" },
-    { code: "zh-CN", label: "简体中文" },
-    { code: "zh-TW", label: "繁體中文" },
-    { code: "ja", label: "日本語" },
-    { code: "ko", label: "한국어" },
-    { code: "vi", label: "Tiếng Việt" },
-    { code: "hi", label: "हिन्दी" },
-    { code: "ar", label: "العربية" },
-  ];
 
   const startCustomization = (drink) => {
     setSelectedDrink(drink);
