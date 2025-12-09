@@ -142,6 +142,43 @@ export async function deleteEmployee(employeeId) {
   return res.json();
 }
 
+// ==================== LOYALTY API ====================
+
+export async function fetchLoyaltyAccount(customerId) {
+  const res = await fetch(buildUrl(`/loyalty/${customerId}`), {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to load loyalty account");
+  return res.json();
+}
+
+export async function earnLoyaltyPoints(customerId, amount, description = null) {
+  const res = await fetch(buildUrl("/loyalty/earn"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ customer_id: customerId, amount, description }),
+  });
+  if (!res.ok) throw new Error("Failed to add loyalty points");
+  return res.json();
+}
+
+export async function redeemLoyaltyPoints(customerId, rewardsToUse = null, orderTotal = null, description = null) {
+  const res = await fetch(buildUrl("/loyalty/redeem"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      customer_id: customerId,
+      rewards_to_use: rewardsToUse,
+      order_total: orderTotal,
+      description,
+    }),
+  });
+  if (!res.ok) throw new Error("Failed to redeem loyalty points");
+  return res.json();
+}
+
 export async function fetchEmployeePerformance(employeeId, startDate = null, endDate = null) {
   let url = buildUrl(`/employees/${employeeId}/performance`);
   if (startDate && endDate) {

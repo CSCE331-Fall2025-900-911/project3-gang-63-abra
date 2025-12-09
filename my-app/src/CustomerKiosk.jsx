@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ShoppingCart, CheckCircle2, Check, Minus, Plus, X } from "lucide-react";
 
 import { motion } from "framer-motion";
-import { fetchMenu } from "./api";
 import { itemImages, fallbackImage } from "./assets/images";
 
 const getItemImage = (name) => {
@@ -11,6 +10,7 @@ const getItemImage = (name) => {
   return itemImages[key] || fallbackImage;
 };
 
+import { fetchMenu, fetchLoyaltyAccount, earnLoyaltyPoints, redeemLoyaltyPoints, fetchWeather } from "./api";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -61,7 +61,7 @@ const FALLBACK_ITEMS = [
   */  
 ];
 
-export default function CustomerKiosk() {
+export default function CustomerKiosk({ user }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -74,6 +74,14 @@ export default function CustomerKiosk() {
   const [translatorReady, setTranslatorReady] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const languages = LANGUAGES;
+  const [loyalty, setLoyalty] = useState(null);
+  const [loyaltyLoading, setLoyaltyLoading] = useState(false);
+  const [loyaltyError, setLoyaltyError] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState(0);
+  const [rewardsUsed, setRewardsUsed] = useState(0);
+  const [redeeming, setRedeeming] = useState(false);
+  const [placingOrder, setPlacingOrder] = useState(false);
+  const [redeemCount, setRedeemCount] = useState(1);
   const [weather, setWeather] = useState(null);
 
   useEffect(() => {
@@ -171,6 +179,35 @@ export default function CustomerKiosk() {
   })();
 }, [languages]);
 
+  const customerId = (user?.email || "").toLowerCase();
+
+  useEffect(() => {
+    if (!customerId) {
+      setLoyalty(null);
+      setAppliedDiscount(0);
+      setRewardsUsed(0);
+      setRedeemCount(1);
+      return;
+    }
+
+    const loadLoyalty = async () => {
+      setLoyaltyLoading(true);
+      setLoyaltyError("");
+      try {
+        const data = await fetchLoyaltyAccount(customerId);
+        setLoyalty(data);
+        setRedeemCount(Math.max(1, data?.rewards_available || 1));
+      } catch (e) {
+        setLoyalty(null);
+        setLoyaltyError("Unable to load your points right now.");
+      } finally {
+        setLoyaltyLoading(false);
+      }
+    };
+
+    loadLoyalty();
+  }, [customerId]);
+
 
   const drinks = useMemo(() => items.filter((it) => !it.isTopping), [items]);
   const toppings = useMemo(() => items.filter((it) => it.isTopping), [items]);
@@ -228,6 +265,25 @@ export default function CustomerKiosk() {
 
   const total = cart.reduce((sum, item) => sum + perItemTotal(item) * item.qty, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.qty, 0);
+  const totalWithDiscount = Math.max(total - appliedDiscount, 0);
+
+  const resetDiscounts = () => {
+    setAppliedDiscount(0);
+    setRewardsUsed(0);
+    setRedeemCount(1);
+  };
+
+  const refreshLoyalty = async () => {
+    if (!customerId) return null;
+    try {
+      const data = await fetchLoyaltyAccount(customerId);
+      setLoyalty(data);
+      return data;
+    } catch (e) {
+      setLoyaltyError("Unable to refresh your points.");
+      return null;
+    }
+  };
 
   const changeLanguage = (lang) => {
     const select = document.querySelector("select.goog-te-combo");
@@ -235,6 +291,69 @@ export default function CustomerKiosk() {
     select.value = lang;
     select.dispatchEvent(new Event("change"));
     setCurrentLanguage(lang);
+  };
+
+  const goToRewards = () => {
+    if (!customerId) {
+      setLoyaltyError("Sign in to use your points.");
+      return;
+    }
+    if (!cart.length) {
+      setLoyaltyError("Add items to your cart before applying rewards.");
+      return;
+    }
+    setPhase("rewards");
+  };
+
+  const handleRedeemRewards = async () => {
+    if (!customerId) {
+      setLoyaltyError("Sign in to use your points.");
+      return;
+    }
+    const available = loyalty?.rewards_available || 0;
+    if (available <= 0) {
+      setLoyaltyError("No rewards available to redeem yet.");
+      return;
+    }
+    if (total <= 0) {
+      setLoyaltyError("Add items to your cart first.");
+      return;
+    }
+    const blocksToUse = Math.min(Math.max(1, redeemCount || 1), available);
+
+    setRedeeming(true);
+    setLoyaltyError("");
+    try {
+      const res = await redeemLoyaltyPoints(customerId, blocksToUse, total, "Kiosk redemption");
+      setAppliedDiscount(res.discount_amount || 0);
+      setRewardsUsed(res.rewards_used || blocksToUse);
+      await refreshLoyalty();
+      setPhase("checkout");
+    } catch (e) {
+      setLoyaltyError("Unable to redeem points right now.");
+    } finally {
+      setRedeeming(false);
+    }
+  };
+
+  const placeOrder = async () => {
+    if (!cart.length) return;
+    setPlacingOrder(true);
+    try {
+      if (customerId) {
+        const res = await earnLoyaltyPoints(customerId, total, "Kiosk order");
+        setLoyalty(res.account || loyalty);
+        await refreshLoyalty();
+      }
+      setCart([]);
+      resetDiscounts();
+      setPhase("confirmed");
+    } catch (e) {
+      setError("Order placed locally, but we could not update points.");
+      setPhase("confirmed");
+    } finally {
+      setPlacingOrder(false);
+    }
   };
 
   const startCustomization = (drink) => {
@@ -338,6 +457,39 @@ export default function CustomerKiosk() {
 
               </div>
               {!translatorReady && <p className="mt-2 text-xs text-amber-600">Loading Google Translate…</p>}
+            </div>
+            <div className="rounded-3xl border border-white/60 bg-white/80 px-6 py-4 shadow-lg backdrop-blur w-full md:w-[320px]">
+              <p className="text-xs uppercase tracking-widest text-slate-400">Rewards</p>
+              {user?.email ? (
+                <>
+                  <p className="text-sm text-slate-500 mt-1">Earn points on every order and redeem for discounts.</p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-xl font-bold text-slate-800">
+                        {loyaltyLoading ? "Loading…" : `${loyalty?.points_balance ?? 0} pts`}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Rewards available: {loyaltyLoading ? "…" : loyalty?.rewards_available ?? 0}
+                      </p>
+                    </div>
+                    <Button
+                    className="px-3 py-2 text-sm"
+                      onClick={goToRewards}
+                      disabled={!customerId || loyaltyLoading}
+                    >
+                      Use Points
+                    </Button>
+                  </div>
+                  {loyalty?.points_to_next_reward > 0 && (
+                    <p className="text-xs text-slate-500 mt-2">
+                      {loyalty?.points_to_next_reward} pts to your next reward.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-slate-500 mt-1">Sign in to collect and spend points.</p>
+              )}
+              {loyaltyError && <p className="mt-2 text-xs text-amber-600">{loyaltyError}</p>}
             </div>
             <button
               type="button"
@@ -501,13 +653,92 @@ export default function CustomerKiosk() {
             </div>
 
             <div className="flex justify-between items-center mt-6">
-              <h3 className="text-lg font-bold">Total: ${total.toFixed(2)}</h3>
+              <div>
+                <h3 className="text-lg font-bold">Subtotal: ${total.toFixed(2)}</h3>
+                {appliedDiscount > 0 && (
+                  <p className="text-sm text-green-600">Rewards discount: -${appliedDiscount.toFixed(2)} ({rewardsUsed} used)</p>
+                )}
+                <p className="text-lg font-bold mt-1">Total due: ${totalWithDiscount.toFixed(2)}</p>
+              </div>
               <div className="flex gap-3">
+                <Button
+                  className="bg-white text-pink-500 border border-pink-200 hover:bg-pink-50 disabled:opacity-50"
+                  onClick={goToRewards}
+                  disabled={!customerId}
+                >
+                  Use Rewards
+                </Button>
                 <Button className="bg-gray-400 hover:bg-gray-500" onClick={() => setPhase("browsing")}>
                   Keep Browsing
                 </Button>
-                <Button onClick={() => setPhase("confirmed")}>Place Order</Button>
+                <Button onClick={placeOrder} disabled={placingOrder}>
+                  {placingOrder ? "Placing..." : "Place Order"}
+                </Button>
               </div>
+            </div>
+          </motion.div>
+        )}
+        {phase === "rewards" && (
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} className="bg-white shadow-lg rounded-2xl p-6 mt-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold">Use your points</h2>
+                <p className="text-gray-500">Convert rewards to a discount for this order.</p>
+              </div>
+              <button className="text-gray-500" onClick={() => setPhase("checkout")}>
+                <X />
+              </button>
+            </div>
+
+            {!customerId && (
+              <p className="mt-4 text-sm text-amber-700">Sign in to access loyalty rewards.</p>
+            )}
+
+            {customerId && (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm text-slate-700">
+                  Balance: <span className="font-semibold">{loyalty?.points_balance ?? 0} pts</span> • Rewards available:{" "}
+                  <span className="font-semibold">{loyalty?.rewards_available ?? 0}</span>
+                </p>
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-slate-700" htmlFor="reward-count">
+                    Rewards to use
+                  </label>
+                  <input
+                    id="reward-count"
+                    type="number"
+                    min={1}
+                    max={loyalty?.rewards_available || 1}
+                    value={redeemCount}
+                    onChange={(e) => setRedeemCount(Number(e.target.value) || 1)}
+                    className="w-24 rounded border border-slate-200 px-3 py-2 text-sm"
+                  />
+                  <Button
+                    className="bg-white text-pink-500 border border-pink-200 hover:bg-pink-50"
+                    onClick={() => setRedeemCount(Math.max(1, loyalty?.rewards_available || 1))}
+                    disabled={!loyalty?.rewards_available}
+                  >
+                    Use Max
+                  </Button>
+                </div>
+                <p className="text-sm text-slate-600">
+                  Est. discount: ${((loyalty?.reward_value || 0) * (redeemCount || 0)).toFixed(2)}
+                </p>
+                <p className="text-sm text-slate-500">
+                  Subtotal: ${total.toFixed(2)} • Current discount: ${appliedDiscount.toFixed(2)}
+                </p>
+              </div>
+            )}
+
+            {loyaltyError && <p className="mt-3 text-xs text-amber-600">{loyaltyError}</p>}
+
+            <div className="flex justify-end gap-3 mt-6">
+              <Button className="bg-gray-200 text-gray-700 hover:bg-gray-300" onClick={() => setPhase("checkout")}>
+                Back to Checkout
+              </Button>
+              <Button onClick={handleRedeemRewards} disabled={redeeming || !customerId}>
+                {redeeming ? "Applying..." : "Apply Discount"}
+              </Button>
             </div>
           </motion.div>
         )}
@@ -664,14 +895,6 @@ export default function CustomerKiosk() {
               </Button>
             </div>
           </motion.div>
-        )}
-
-        {weather && (
-          <div className="fixed bottom-4 right-4 z-50">
-            <Button className="bg-blue-500 text-white shadow-lg hover:bg-blue-600">
-              {weather.main.temp}° - {weather.weather[0].main}
-            </Button>
-          </div>
         )}
       </div>
     </div>
