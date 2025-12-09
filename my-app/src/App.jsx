@@ -120,7 +120,7 @@ function App() {
       case 'login':
         return <LoginPage onLoginSuccess={handleLoginSuccess} />;
       case 'kiosk':
-        return <CustomerKiosk />;
+        return <CustomerKiosk user={user} />;
       case 'manager':
         return isManager ? <ManagerPage /> : <LoginPage onLoginSuccess={handleLoginSuccess} />;
       case 'employee':
