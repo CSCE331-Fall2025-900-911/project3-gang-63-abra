@@ -78,6 +78,17 @@ function App() {
     setCurrentPage(page);
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_BASE}/logout`, { credentials: 'include' });
+    } catch {
+      // ignore logout errors; still clear local state
+    } finally {
+      setUser(null);
+      setCurrentPage('login');
+    }
+  };
+
   // Simple navigation bar to switch between views (for testing)
   const Navigation = () => (
     <nav className="navigation-bar">
@@ -91,6 +102,17 @@ function App() {
       )}
       {/* You can add more buttons here as you build the Manager/Cashier views */}
     </nav>
+  );
+
+  const AccountBar = () => (
+    <div className="account-bar">
+      <span>{user?.email ? `Signed in as ${user.email}` : 'Not signed in'}</span>
+      {user?.email && (
+        <button className="logout-btn" onClick={handleLogout}>
+          Sign out
+        </button>
+      )}
+    </div>
   );
 
   // This function decides which component to show
@@ -111,6 +133,7 @@ function App() {
 
   return (
     <div className="app-container">
+      <AccountBar />
       <Navigation />
       {renderCurrentPage()}
       <AccessibilityPanel />
