@@ -4,6 +4,20 @@ import { ShoppingCart, CheckCircle2, Check, Minus, Plus, X } from "lucide-react"
 import { motion } from "framer-motion";
 import { fetchMenu } from "./api";
 
+const LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "es", label: "Español" },
+  { code: "fr", label: "Français" },
+  { code: "de", label: "Deutsch" },
+  { code: "zh-CN", label: "简体中文" },
+  { code: "zh-TW", label: "繁體中文" },
+  { code: "ja", label: "日本語" },
+  { code: "ko", label: "한국어" },
+  { code: "vi", label: "Tiếng Việt" },
+  { code: "hi", label: "हिन्दी" },
+  { code: "ar", label: "العربية" },
+];
+
 const Button = ({ children, className = "", ...props }) => (
   <button
     className={`bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-semibold transition ${className}`}
@@ -51,6 +65,7 @@ export default function CustomerKiosk() {
   const [sugarLevel, setSugarLevel] = useState("100%");
   const [translatorReady, setTranslatorReady] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
+  const languages = LANGUAGES;
 
   useEffect(() => {
     let mounted = true;
@@ -76,6 +91,8 @@ export default function CustomerKiosk() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    window.__googleTranslateInitialized = false;
+
     const scriptId = "google-translate-script";
     const elementId = "google_translate_element";
 
@@ -89,41 +106,51 @@ export default function CustomerKiosk() {
     };
 
     const initTranslateElement = () => {
-      if (!window.google || !window.google.translate) return;
-      if (!window.__googleTranslateInitialized) {
-        new window.google.translate.TranslateElement(
-          {
-            pageLanguage: "en",
-            includedLanguages: "en,es",
-            autoDisplay: false,
-          },
-          elementId
-        );
-        window.__googleTranslateInitialized = true;
-      }
-      ensureSelectReady();
-    };
+    if (!window.google || !window.google.translate) return;
+
+    const oldWrapper = document.querySelector(".goog-te-gadget");
+    const oldFrame = document.querySelector("iframe.goog-te-banner-frame");
+    const oldMenuFrame = document.querySelector("iframe.goog-te-menu-frame");
+
+    if (oldWrapper) oldWrapper.remove();
+    if (oldFrame) oldFrame.remove();
+    if (oldMenuFrame) oldMenuFrame.remove();
+
+    window.googleTranslateElementInit = null;
+    window.__googleTranslateInitialized = false;
+
+    new window.google.translate.TranslateElement(
+      {
+        pageLanguage: "en",
+        includedLanguages: languages.map((l) => l.code).join(","),
+        autoDisplay: false,
+      },
+      "google_translate_element"
+    );
+
+    window.__googleTranslateInitialized = true;
+  };
+
 
     window.googleTranslateElementInit = initTranslateElement;
 
-    if (!document.getElementById(scriptId)) {
+    if (window.google && window.google.translate) {
+      initTranslateElement();
+    } else if (!document.getElementById(scriptId)) {
       const script = document.createElement("script");
       script.id = scriptId;
       script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
       script.async = true;
       document.body.appendChild(script);
-    } else if (window.google && window.google.translate) {
-      initTranslateElement();
     }
 
     const interval = setInterval(() => {
-      if (ensureSelectReady()) {
-        clearInterval(interval);
-      }
+      if (ensureSelectReady()) clearInterval(interval);
     }, 500);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [languages]);
+
 
   const drinks = useMemo(() => items.filter((it) => !it.isTopping), [items]);
   const toppings = useMemo(() => items.filter((it) => it.isTopping), [items]);
@@ -189,13 +216,6 @@ export default function CustomerKiosk() {
     select.dispatchEvent(new Event("change"));
     setCurrentLanguage(lang);
   };
-
-  const languageButtonClass = (lang) =>
-    `px-4 py-1.5 rounded-full text-sm font-semibold border transition ${
-      currentLanguage === lang
-        ? "bg-pink-500 text-white border-pink-500"
-        : "bg-white/90 text-slate-600 border-white/60 hover:border-pink-200"
-    }`;
 
   const startCustomization = (drink) => {
     setSelectedDrink(drink);
@@ -277,43 +297,58 @@ export default function CustomerKiosk() {
           <div className="flex flex-col gap-4 w-full md:w-auto md:items-end">
             <div className="rounded-3xl border border-white/60 bg-white/80 px-6 py-4 shadow-lg backdrop-blur">
               <p className="text-xs uppercase tracking-widest text-slate-400">Language</p>
-              <p className="text-sm text-slate-500 mt-1">Use Google Translate to view the kiosk in Spanish.</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className={languageButtonClass("en")}
-                  onClick={() => changeLanguage("en")}
-                  disabled={!translatorReady || currentLanguage === "en"}
+              <p className="text-sm text-slate-500 mt-1">Translate the kiosk into your preferred language.</p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <label className="text-sm text-slate-600" htmlFor="language-select">
+                  Choose language:
+                </label>
+                <select
+                  id="language-select"
+                  className="notranslate rounded-xl border border-white/60 bg-white/90 px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
+                  value={currentLanguage}
+                  onChange={(e) => changeLanguage(e.target.value)}
+                  disabled={!translatorReady}
                 >
-                  English
-                </button>
-                <button
-                  type="button"
-                  className={languageButtonClass("es")}
-                  onClick={() => changeLanguage("es")}
-                  disabled={!translatorReady || currentLanguage === "es"}
-                >
-                  Español
-                </button>
+                  {languages.map((lang) => (
+                    <option key={lang.code} value={lang.code} className="notranslate">
+                      {lang.label}
+                    </option>
+                  ))}
+                </select>
+
               </div>
               {!translatorReady && <p className="mt-2 text-xs text-amber-600">Loading Google Translate…</p>}
             </div>
             <button
               type="button"
               onClick={() => (cart.length ? setPhase("checkout") : null)}
-              className={`w-full md:w-auto flex items-center gap-4 rounded-3xl border border-white/60 bg-white/80 px-6 py-4 shadow-lg backdrop-blur transition focus:outline-none focus:ring-4 focus:ring-pink-200 ${
-                cart.length ? "hover:-translate-y-1" : "opacity-60"
+              className={`w-full md:w-auto flex items-center gap-4 rounded-3xl border px-6 py-4 shadow-lg backdrop-blur transition focus:outline-none focus:ring-4 ${
+                cart.length
+                  ? "border-pink-500 bg-pink-500 text-white hover:-translate-y-1 focus:ring-pink-200"
+                  : "border-slate-200 bg-white/80 text-slate-500 opacity-70"
               }`}
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-pink-500 text-white">
+              <div
+                className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
+                  cart.length ? "bg-white/20 text-white" : "bg-slate-200 text-slate-500"
+                }`}
+              >
                 <ShoppingCart />
               </div>
               <div className="text-left">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Cart Summary</p>
-                <p className="text-lg font-bold text-slate-800">
+                <p
+                  className={`text-xs uppercase tracking-wide ${
+                    cart.length ? "text-white/80" : "text-slate-400"
+                  }`}
+                >
+                  Cart Summary
+                </p>
+                <p className={`text-lg font-bold ${cart.length ? "text-white" : "text-slate-800"}`}>
                   {itemCount} item{itemCount === 1 ? "" : "s"}
                 </p>
-                <p className="text-sm text-slate-500">${total.toFixed(2)} • Tap to review</p>
+                <p className={`text-sm ${cart.length ? "text-white/90" : "text-slate-500"}`}>
+                  ${total.toFixed(2)} • Tap to review
+                </p>
               </div>
             </button>
           </div>
