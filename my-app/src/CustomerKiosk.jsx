@@ -48,6 +48,8 @@ export default function CustomerKiosk() {
   const [category, setCategory] = useState("All");
   const [selectedDrink, setSelectedDrink] = useState(null);
   const [selectedToppings, setSelectedToppings] = useState([]);
+  const [iceLevel, setIceLevel] = useState("Regular Ice");
+  const [sugarLevel, setSugarLevel] = useState("100%");
   const [translatorReady, setTranslatorReady] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
 
@@ -195,11 +197,15 @@ export default function CustomerKiosk() {
 
   const startCustomization = (drink) => {
     setSelectedDrink(drink);
+    setIceLevel("Regular Ice");
+    setSugarLevel("100%");
     setSelectedToppings([]);
     setPhase("customizing");
   };
 
   const closeCustomizer = () => {
+    setIceLevel("Regular Ice");
+    setSugarLevel("100%");
     setSelectedDrink(null);
     setSelectedToppings([]);
     setPhase("browsing");
@@ -215,7 +221,11 @@ export default function CustomerKiosk() {
 
   const addSelectionToCart = () => {
     if (!selectedDrink) return;
-    addToCart(selectedDrink, selectedToppings);
+    addToCart(
+      { ...selectedDrink, iceLevel, sugarLevel },
+      selectedToppings
+    );
+
     closeCustomizer();
   };
 
@@ -411,6 +421,9 @@ export default function CustomerKiosk() {
                         + {item.toppings.map((t) => `${t.name} (${t.price ? `$${Number(t.price).toFixed(2)}` : "included"})`).join(", ")}
                       </p>
                     )}
+                    <p className="text-xs text-gray-400">
+                      Ice: {item.iceLevel || "Regular Ice"} • Sugar: {item.sugarLevel || "100%"}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button className="px-2 py-2 rounded-lg bg-gray-100" onClick={() => updateQty(item.key, -1)}>
@@ -465,7 +478,45 @@ export default function CustomerKiosk() {
             {selectedDrink.description && (
               <p className="text-base leading-relaxed text-gray-600">{selectedDrink.description}</p>
             )}
+            {/* ICE LEVEL */}
+            <section className="space-y-3">
+              <p className="text-sm font-semibold text-gray-700">Ice Level</p>
+              <div className="flex flex-wrap gap-3">
+                {["Extra Ice", "Regular Ice", "Less Ice", "No Ice"].map((lvl) => (
+                  <button
+                    key={lvl}
+                    onClick={() => setIceLevel(lvl)}
+                    className={`px-4 py-2 rounded-lg border text-sm transition ${
+                      iceLevel === lvl
+                        ? "border-pink-500 bg-pink-50 text-pink-600"
+                        : "border-slate-200 bg-white hover:border-pink-200"
+                    }`}
+                  >
+                    {lvl}
+                  </button>
+                ))}
+              </div>
+            </section>
 
+            {/* SUGAR LEVEL */}
+            <section className="space-y-3 mt-6">
+              <p className="text-sm font-semibold text-gray-700">Sugar Level</p>
+              <div className="flex flex-wrap gap-3">
+                {["0%", "25%", "50%", "75%", "100%"].map((lvl) => (
+                  <button
+                    key={lvl}
+                    onClick={() => setSugarLevel(lvl)}
+                    className={`px-4 py-2 rounded-lg border text-sm transition ${
+                      sugarLevel === lvl
+                        ? "border-pink-500 bg-pink-50 text-pink-600"
+                        : "border-slate-200 bg-white hover:border-pink-200"
+                    }`}
+                  >
+                    {lvl}
+                  </button>
+                ))}
+              </div>
+            </section>
             {toppings.length > 0 && (
               <section className="space-y-5">
                 <div className="flex flex-col gap-1">
