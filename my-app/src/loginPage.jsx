@@ -1,4 +1,6 @@
 import React from 'react';
+
+const googleURL = import.meta.env.VITE_GOOGLE_URL;
 // Styles are now in App.css
 
 /**
@@ -12,7 +14,7 @@ function LoginPage({ onLoginSuccess }) {
   const handleGoogleLogin = () => {
     // This URL MUST match the endpoint 
     // The backend is running on port 8000.
-    window.location.href = 'http://localhost:8000/auth/google';
+    window.location.href = googleURL;
     // In a real app, the backend would redirect back,
     // and you'd call onLoginSuccess() after getting confirmation.
   };
