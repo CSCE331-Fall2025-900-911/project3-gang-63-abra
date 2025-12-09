@@ -1,3 +1,4 @@
+import { fetchWeather } from './api.js';
 import React, { useState, useEffect, useMemo } from 'react';
 import CustomerKiosk from './CustomerKiosk.jsx'; // Import the kiosk
 import LoginPage from './loginPage.jsx';       // Import the login page
@@ -23,6 +24,7 @@ function App() {
   // This state will control which page is visible.
   const [currentPage, setCurrentPage] = useState('kiosk');
   const [user, setUser] = useState(null);
+  const [weather, setWeather] = useState(null);
 
   const isManager = useMemo(
     () => user?.email && ALLOWED_EMAILS.includes(user.email.toLowerCase()),
@@ -57,6 +59,18 @@ function App() {
     loadUser();
   }, []); // The empty array means this effect runs once on component mount
 
+  useEffect(() => {
+    const loadWeather = async () => {
+      try {
+        const data = await fetchWeather("College Station"); // or any city
+        setWeather(data);
+      } catch (err) {
+        console.error("Failed to fetch weather:", err);
+      }
+    };
+    loadWeather();
+  }, []);
+
   // This function will be passed to the LoginPage
   // so it can tell the App to switch views after a successful login.
   const handleLoginSuccess = (userData = user) => {
@@ -90,7 +104,7 @@ function App() {
   };
 
   // Simple navigation bar to switch between views (for testing)
-  const Navigation = () => (
+  const Navigation = ({ weather }) => (
     <nav className="navigation-bar">
       <div className="nav-links">
         <button onClick={() => navigate('login')}>Login Page</button>
@@ -102,6 +116,11 @@ function App() {
           </>
         )}
       </div>
+      {weather && (
+        <button className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600">
+          {weather.main.temp}° - {weather.weather[0].main}
+        </button>
+      )}
       <div className="account-section">
         <span>{user?.email ? `Signed in as ${user.email}` : 'Not signed in'}</span>
         {user?.email && (
@@ -132,7 +151,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <Navigation />
+      <Navigation weather={weather} />
       {renderCurrentPage()}
       <AccessibilityPanel />
       <AccessibilityPanel />
