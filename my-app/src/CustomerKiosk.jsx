@@ -427,9 +427,8 @@ export default function CustomerKiosk() {
                       <img
                         src={getItemImage(item.name)}
                         alt={item.name}
-                        className="w-full h-40 object-cover rounded-t-2xl"
+                        className="w-full max-h-52 object-contain rounded-t-2xl bg-white/30 p-2"
                       />
-
                       <CardContent className="relative flex h-full flex-col gap-4 text-left select-text">
                         <div className="space-y-2">
                           <p className="text-[11px] tracking-[0.3em] text-pink-400 font-semibold">{item.category || "Drink"}</p>
@@ -518,20 +517,30 @@ export default function CustomerKiosk() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white shadow-xl mt-10 border border-slate-200 p-10 space-y-8"
           >
-            <div className="flex flex-wrap items-start justify-between gap-6">
+            <div className="flex flex-col lg:flex-row items-start gap-8">
               <div className="flex-1 min-w-[240px] space-y-2">
-                <img
-                  src={getItemImage(selectedDrink.name)}
-                  alt={selectedDrink.name}
-                  className="w-full h-56 object-cover rounded-2xl mb-4"
-                />
-                <p className="text-xs uppercase tracking-[0.4em] text-pink-500 font-semibold">
-                  {selectedDrink.category || "Drink"}
-                </p>
-                <h2 className="text-3xl font-bold text-slate-900">{selectedDrink.name}</h2>
-                <p className="text-lg text-gray-500">
-                  ${Number(selectedDrink.price || 0).toFixed(2)}
-                </p>
+                <div className="flex flex-col lg:flex-row gap-6">
+                  {/* Text section */}
+                  <div className="flex-1 space-y-2">
+                    <p className="text-xs uppercase tracking-[0.4em] text-pink-500 font-semibold">
+                      {selectedDrink.category || "Drink"}
+                    </p>
+                    <h2 className="text-3xl font-bold text-slate-900">{selectedDrink.name}</h2>
+                    <p className="text-lg text-gray-500">${Number(selectedDrink.price || 0).toFixed(2)}</p>
+                    {selectedDrink.description && (
+                      <p className="text-base text-gray-600">{selectedDrink.description}</p>
+                    )}
+                  </div>
+
+                  {/* Image section */}
+                  <div className="flex-shrink-0 w-3/12 lg:w-1/6">
+                    <img
+                      src={getItemImage(selectedDrink.name)}
+                      alt={selectedDrink.name}
+                      className="w-full h-auto object-contain rounded-xl border border-gray-200 p-1"
+                    />
+                  </div>
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 <Button className="bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-none" onClick={closeCustomizer}>
