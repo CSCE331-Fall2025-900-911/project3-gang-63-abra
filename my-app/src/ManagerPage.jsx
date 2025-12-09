@@ -762,6 +762,10 @@ const EmployeesTab = () => {
     return <div className="flex justify-center py-12"><RefreshCw className="w-8 h-8 animate-spin text-pink-500" /></div>;
   }
 
+  // Count managers and employees by role
+  const managerCount = employees.filter(e => e.role === 'Manager').length;
+  const employeeCount = employees.filter(e => e.role === 'Employee').length;
+
   return (
     <div className="space-y-6">
       {error && (
@@ -771,21 +775,21 @@ const EmployeesTab = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard 
-          title="Total Employees" 
+          title="Total Staff" 
           value={employees.length} 
           icon={Users}
           color="blue"
         />
         <StatCard 
           title="Managers" 
-          value={employees.filter(e => e.manager_id === 0).length} 
+          value={managerCount} 
           icon={Users}
           color="green"
         />
         <StatCard 
-          title="Avg Salary" 
-          value={`$${(employees.reduce((sum, e) => sum + (e.salary || 0), 0) / employees.length || 0).toFixed(2)}/hr`} 
-          icon={DollarSign}
+          title="Employees" 
+          value={employeeCount} 
+          icon={Users}
           color="pink"
         />
       </div>
@@ -806,7 +810,7 @@ const EmployeesTab = () => {
       <Card>
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Users className="w-5 h-5" />
-          Employee List
+          Staff List
         </h3>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -829,11 +833,11 @@ const EmployeesTab = () => {
                   </td>
                   <td className="py-3 px-4 text-center">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      emp.manager_id === 0 
+                      emp.role === 'Manager'
                         ? 'bg-purple-100 text-purple-700' 
                         : 'bg-blue-100 text-blue-700'
                     }`}>
-                      {emp.manager_id === 0 ? 'Manager' : 'Employee'}
+                      {emp.role}
                     </span>
                   </td>
                   <td className="py-3 px-4">

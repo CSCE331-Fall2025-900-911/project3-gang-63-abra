@@ -496,25 +496,66 @@ def delete_inventory_item(ingredient_id):
 
 @app.get("/api/employees")
 def get_employees():
-    """Get all employees."""
+    """Get all employees and managers from both tables."""
     try:
         with _db_cursor() as cur:
+            # Get all managers from manager table
             cur.execute("""
-                SELECT employee_id, name, salary, manager_id
+                SELECT 
+                    manager_id as employee_id, 
+                    name, 
+                    salary::numeric(7,2) as salary, 
+                    'Manager' as role
+                FROM manager
+            """)
+            managers = cur.fetchall()
+            
+            # Get all employees from employee table
+            cur.execute("""
+                SELECT 
+                    employee_id, 
+                    name, 
+                    salary, 
+                    manager_id
                 FROM employee
                 ORDER BY name;
             """)
-            rows = cur.fetchall()
+            employees = cur.fetchall()
         
-        employees = []
-        for row in rows:
-            employees.append({
-                "employee_id": row["employee_id"],
-                "name": row["name"],
-                "salary": float(row["salary"]) if row["salary"] else None,
-                "manager_id": row["manager_id"]
+        # Create a set of manager IDs from the manager table
+        manager_ids_set = {m["employee_id"] for m in managers}
+        
+        # Combine results
+        all_staff = []
+        
+        # Add all employees from employee table
+        # If their ID matches a manager ID, they're a manager, otherwise they're an employee
+        for emp in employees:
+            is_manager = emp["employee_id"] in manager_ids_set
+            all_staff.append({
+                "employee_id": emp["employee_id"],
+                "name": emp["name"],
+                "salary": float(emp["salary"]) if emp["salary"] else None,
+                "role": "Manager" if is_manager else "Employee",
+                "manager_id": emp["manager_id"]
             })
-        return jsonify(employees)
+        
+        # Add managers from manager table that aren't already in employee table
+        employee_ids_set = {e["employee_id"] for e in employees}
+        for mgr in managers:
+            if mgr["employee_id"] not in employee_ids_set:
+                all_staff.append({
+                    "employee_id": mgr["employee_id"],
+                    "name": mgr["name"],
+                    "salary": float(mgr["salary"]) if mgr["salary"] else None,
+                    "role": "Manager",
+                    "manager_id": 0
+                })
+        
+        # Sort by name
+        all_staff.sort(key=lambda x: x["name"])
+        
+        return jsonify(all_staff)
     except Exception as exc:
         app.logger.exception("Unable to fetch employees: %s", exc)
         return jsonify({"error": "Unable to load employees"}), 500
