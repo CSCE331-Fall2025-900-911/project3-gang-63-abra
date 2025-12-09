@@ -145,7 +145,7 @@ export async function deleteEmployee(employeeId) {
 // ==================== LOYALTY API ====================
 
 export async function fetchLoyaltyAccount(customerId) {
-  const res = await fetch(buildUrl(`/loyalty/${encodeURIComponent(customerId)}`), {
+  const res = await fetch(buildUrl(`/loyalty/${customerId}`), {
     credentials: "include",
   });
   if (!res.ok) throw new Error("Failed to load loyalty account");
