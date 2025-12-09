@@ -106,19 +106,31 @@ export default function CustomerKiosk() {
     };
 
     const initTranslateElement = () => {
-      if (!window.google || !window.google.translate) return;
+    if (!window.google || !window.google.translate) return;
 
-      new window.google.translate.TranslateElement(
-        {
-          pageLanguage: "en",
-          includedLanguages: languages.map((l) => l.code).join(","),
-          autoDisplay: false,
-        },
-        elementId
-      );
+    const oldWrapper = document.querySelector(".goog-te-gadget");
+    const oldFrame = document.querySelector("iframe.goog-te-banner-frame");
+    const oldMenuFrame = document.querySelector("iframe.goog-te-menu-frame");
 
-      window.__googleTranslateInitialized = true;
-    };
+    if (oldWrapper) oldWrapper.remove();
+    if (oldFrame) oldFrame.remove();
+    if (oldMenuFrame) oldMenuFrame.remove();
+
+    window.googleTranslateElementInit = null;
+    window.__googleTranslateInitialized = false;
+
+    new window.google.translate.TranslateElement(
+      {
+        pageLanguage: "en",
+        includedLanguages: languages.map((l) => l.code).join(","),
+        autoDisplay: false,
+      },
+      "google_translate_element"
+    );
+
+    window.__googleTranslateInitialized = true;
+  };
+
 
     window.googleTranslateElementInit = initTranslateElement;
 
