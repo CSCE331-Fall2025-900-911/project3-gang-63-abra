@@ -101,7 +101,8 @@ def fetch_menu_items():
             "id": row.get("id"),
             "name": row.get("name"),
             "price": float(row["price"]) if row.get("price") is not None else None,
-            "is_topping": row.get("is_topping")
+            "is_topping": row.get("is_topping"),
+            "category": row.get("category")  # New field for category
         })
     return mapped
 
