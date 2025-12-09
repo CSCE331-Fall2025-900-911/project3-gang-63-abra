@@ -179,8 +179,10 @@ export default function CustomerKiosk({ user }) {
   })();
 }, [languages]);
 
+  const customerId = (user?.email || "").toLowerCase();
+
   useEffect(() => {
-    if (!user?.email) {
+    if (!customerId) {
       setLoyalty(null);
       setAppliedDiscount(0);
       setRewardsUsed(0);
@@ -192,7 +194,7 @@ export default function CustomerKiosk({ user }) {
       setLoyaltyLoading(true);
       setLoyaltyError("");
       try {
-        const data = await fetchLoyaltyAccount(user.email);
+        const data = await fetchLoyaltyAccount(customerId);
         setLoyalty(data);
         setRedeemCount(Math.max(1, data?.rewards_available || 1));
       } catch (e) {
@@ -204,7 +206,7 @@ export default function CustomerKiosk({ user }) {
     };
 
     loadLoyalty();
-  }, [user]);
+  }, [customerId]);
 
 
   const drinks = useMemo(() => items.filter((it) => !it.isTopping), [items]);
@@ -272,9 +274,9 @@ export default function CustomerKiosk({ user }) {
   };
 
   const refreshLoyalty = async () => {
-    if (!user?.email) return null;
+    if (!customerId) return null;
     try {
-      const data = await fetchLoyaltyAccount(user.email);
+      const data = await fetchLoyaltyAccount(customerId);
       setLoyalty(data);
       return data;
     } catch (e) {
@@ -292,7 +294,7 @@ export default function CustomerKiosk({ user }) {
   };
 
   const goToRewards = () => {
-    if (!user?.email) {
+    if (!customerId) {
       setLoyaltyError("Sign in to use your points.");
       return;
     }
@@ -304,7 +306,7 @@ export default function CustomerKiosk({ user }) {
   };
 
   const handleRedeemRewards = async () => {
-    if (!user?.email) {
+    if (!customerId) {
       setLoyaltyError("Sign in to use your points.");
       return;
     }
@@ -322,7 +324,7 @@ export default function CustomerKiosk({ user }) {
     setRedeeming(true);
     setLoyaltyError("");
     try {
-      const res = await redeemLoyaltyPoints(user.email, blocksToUse, total, "Kiosk redemption");
+      const res = await redeemLoyaltyPoints(customerId, blocksToUse, total, "Kiosk redemption");
       setAppliedDiscount(res.discount_amount || 0);
       setRewardsUsed(res.rewards_used || blocksToUse);
       await refreshLoyalty();
@@ -338,8 +340,9 @@ export default function CustomerKiosk({ user }) {
     if (!cart.length) return;
     setPlacingOrder(true);
     try {
-      if (user?.email) {
-        await earnLoyaltyPoints(user.email, total, "Kiosk order");
+      if (customerId) {
+        const res = await earnLoyaltyPoints(customerId, total, "Kiosk order");
+        setLoyalty(res.account || loyalty);
         await refreshLoyalty();
       }
       setCart([]);
@@ -472,7 +475,7 @@ export default function CustomerKiosk({ user }) {
                     <Button
                     className="px-3 py-2 text-sm"
                       onClick={goToRewards}
-                      disabled={!user?.email || loyaltyLoading}
+                      disabled={!customerId || loyaltyLoading}
                     >
                       Use Points
                     </Button>
@@ -661,7 +664,7 @@ export default function CustomerKiosk({ user }) {
                 <Button
                   className="bg-white text-pink-500 border border-pink-200 hover:bg-pink-50 disabled:opacity-50"
                   onClick={goToRewards}
-                  disabled={!user?.email}
+                  disabled={!customerId}
                 >
                   Use Rewards
                 </Button>
@@ -687,11 +690,11 @@ export default function CustomerKiosk({ user }) {
               </button>
             </div>
 
-            {!user?.email && (
+            {!customerId && (
               <p className="mt-4 text-sm text-amber-700">Sign in to access loyalty rewards.</p>
             )}
 
-            {user?.email && (
+            {customerId && (
               <div className="mt-4 space-y-3">
                 <p className="text-sm text-slate-700">
                   Balance: <span className="font-semibold">{loyalty?.points_balance ?? 0} pts</span> • Rewards available:{" "}
@@ -733,7 +736,7 @@ export default function CustomerKiosk({ user }) {
               <Button className="bg-gray-200 text-gray-700 hover:bg-gray-300" onClick={() => setPhase("checkout")}>
                 Back to Checkout
               </Button>
-              <Button onClick={handleRedeemRewards} disabled={redeeming || !user?.email}>
+              <Button onClick={handleRedeemRewards} disabled={redeeming || !customerId}>
                 {redeeming ? "Applying..." : "Apply Discount"}
               </Button>
             </div>
