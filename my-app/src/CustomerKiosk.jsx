@@ -339,7 +339,7 @@ export default function CustomerKiosk({ user }) {
     setPlacingOrder(true);
     try {
       if (user?.email) {
-        await earnLoyaltyPoints(user.email, totalWithDiscount, "Kiosk order");
+        await earnLoyaltyPoints(user.email, total, "Kiosk order");
         await refreshLoyalty();
       }
       setCart([]);

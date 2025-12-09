@@ -41,9 +41,10 @@ ALLOWED_EMAILS = [
 ]
 
 # Loyalty defaults (tweak via env vars)
-LOYALTY_POINTS_PER_DOLLAR = int(os.getenv("LOYALTY_POINTS_PER_DOLLAR", "100"))  # $4.33 => 433 points
-LOYALTY_REWARD_THRESHOLD = int(os.getenv("LOYALTY_REWARD_THRESHOLD", "1000"))  # points needed to redeem one reward
-LOYALTY_REWARD_VALUE = float(os.getenv("LOYALTY_REWARD_VALUE", "2.00"))        # dollars off per redeemed reward block
+# $4.33 earns 433 points; every 2500 points = $5.80 off
+LOYALTY_POINTS_PER_DOLLAR = int(os.getenv("LOYALTY_POINTS_PER_DOLLAR", "100"))
+LOYALTY_REWARD_THRESHOLD = int(os.getenv("LOYALTY_REWARD_THRESHOLD", "2500"))
+LOYALTY_REWARD_VALUE = float(os.getenv("LOYALTY_REWARD_VALUE", "5.80"))
 
 oauth = OAuth(app)
 google = oauth.register(
