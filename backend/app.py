@@ -40,6 +40,12 @@ ALLOWED_EMAILS = [
     'zaheersufi@tamu.edu'
 ]
 
+# Loyalty defaults (tweak via env vars)
+# $4.33 earns 433 points; every 2500 points = $5.80 off
+LOYALTY_POINTS_PER_DOLLAR = int(os.getenv("LOYALTY_POINTS_PER_DOLLAR", "100"))
+LOYALTY_REWARD_THRESHOLD = int(os.getenv("LOYALTY_REWARD_THRESHOLD", "2500"))
+LOYALTY_REWARD_VALUE = float(os.getenv("LOYALTY_REWARD_VALUE", "5.80"))
+
 oauth = OAuth(app)
 google = oauth.register(
     name='google',
@@ -80,6 +86,83 @@ def _db_cursor():
                 yield cur
     finally:
         conn.close()
+
+# ==================== LOYALTY HELPERS ====================
+
+# --- SQL STATEMENTS (no goofy inline SQL anymore) ---
+
+SQL_GET_ACCOUNT = """
+    SELECT account_id, customer_id, points_balance, created_at, updated_at
+    FROM loyalty_accounts
+    WHERE customer_id = %s;
+"""
+
+SQL_CREATE_ACCOUNT = """
+    INSERT INTO loyalty_accounts (customer_id, points_balance)
+    VALUES (%s, 0)
+    RETURNING account_id, customer_id, points_balance, created_at, updated_at;
+"""
+
+SQL_UPDATE_BALANCE = """
+    UPDATE loyalty_accounts
+    SET points_balance = points_balance + %s,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE account_id = %s
+    RETURNING account_id, customer_id, points_balance, created_at, updated_at;
+"""
+
+SQL_INSERT_TXN = """
+    INSERT INTO loyalty_transactions (account_id, txn_type, points, amount, description)
+    VALUES (%s, %s, %s, %s, %s);
+"""
+
+
+# --- ACCOUNT LOOKUP ---
+
+def _find_loyalty_account(cur, customer_id, create_if_missing=True):
+    cur.execute(SQL_GET_ACCOUNT, (customer_id,))
+    account = cur.fetchone()
+
+    if account or not create_if_missing:
+        return account
+
+    cur.execute(SQL_CREATE_ACCOUNT, (customer_id,))
+    return cur.fetchone()
+
+
+# --- REWARD SUMMARY ---
+
+def _calculate_reward_summary(points_balance):
+    threshold = LOYALTY_REWARD_THRESHOLD
+    value = LOYALTY_REWARD_VALUE
+
+    if threshold <= 0:
+        return {
+            "rewards_available": 0,
+            "reward_value": value,
+            "points_to_next_reward": None
+        }
+
+    rewards = points_balance // threshold
+    remainder = points_balance % threshold
+    to_next = (threshold - remainder) % threshold
+
+    return {
+        "rewards_available": rewards,
+        "reward_value": value,
+        "points_to_next_reward": to_next
+    }
+
+
+# --- SERIALIZATION ---
+
+def _serialize_account(account_row):
+    summary = _calculate_reward_summary(account_row["points_balance"])
+    return {
+        "customer_id": account_row["customer_id"],
+        "points_balance": int(account_row["points_balance"]),
+        **summary
+    }
 
 
 def fetch_menu_items():
@@ -169,6 +252,145 @@ def get_user():
 def logout():
     session.pop('user', None)
     return jsonify({'message': 'Logged out successfully'})
+
+
+# ==================== LOYALTY / REWARDS ====================
+
+@app.get("/api/loyalty/<string:customer_id>")
+def get_loyalty_account(customer_id):
+    """
+    Fetch (or create) a loyalty account by customer id/email/phone.
+    """
+    try:
+        with _db_cursor() as cur:
+            account = _find_loyalty_account(cur, customer_id, create_if_missing=True)
+        return jsonify(_serialize_account(account))
+    except Exception as exc:
+        app.logger.exception("Unable to fetch loyalty account: %s", exc)
+        return jsonify({"error": "Unable to load loyalty account"}), 500
+
+
+@app.post("/api/loyalty/earn")
+def earn_loyalty_points():
+    """
+    Add points for a spend amount. Example: $4.33 => 433 points (100 pts per $1).
+    Payload: { customer_id: string, amount: number, description?: string }
+    """
+    data = request.get_json() or {}
+    customer_id = data.get("customer_id")
+    amount = data.get("amount")
+
+    if not customer_id:
+        return jsonify({"error": "customer_id is required"}), 400
+    try:
+        amount_value = float(amount)
+    except (TypeError, ValueError):
+        return jsonify({"error": "amount must be a number"}), 400
+    if amount_value < 0:
+        return jsonify({"error": "amount must be non-negative"}), 400
+
+    points_to_add = int(round(amount_value * LOYALTY_POINTS_PER_DOLLAR))
+
+    try:
+        with _db_cursor() as cur:
+            account = _find_loyalty_account(cur, customer_id, create_if_missing=True)
+            cur.execute(SQL_UPDATE_BALANCE, (points_to_add, account["account_id"]))
+            updated = cur.fetchone()
+
+            cur.execute(SQL_INSERT_TXN, (
+                account["account_id"],
+                "earn",
+                points_to_add,
+                amount_value,
+                data.get("description")
+            ))
+
+
+        return jsonify({
+            "message": "Points added",
+            "added_points": points_to_add,
+            "account": _serialize_account(updated)
+        })
+    except Exception as exc:
+        app.logger.exception("Unable to add loyalty points: %s", exc)
+        return jsonify({"error": "Unable to add loyalty points"}), 500
+
+
+@app.post("/api/loyalty/redeem")
+def redeem_loyalty_points():
+    """
+    Redeem available rewards. Each reward block burns LOYALTY_REWARD_THRESHOLD points
+    and yields LOYALTY_REWARD_VALUE dollars off.
+    Payload: { customer_id: string, rewards_to_use?: int, order_total?: number }
+    """
+    data = request.get_json() or {}
+    customer_id = data.get("customer_id")
+    rewards_requested = data.get("rewards_to_use")
+    order_total = data.get("order_total")
+
+    if not customer_id:
+        return jsonify({"error": "customer_id is required"}), 400
+
+    try:
+        rewards_requested = int(rewards_requested) if rewards_requested is not None else None
+    except (TypeError, ValueError):
+        return jsonify({"error": "rewards_to_use must be an integer"}), 400
+
+    try:
+        order_total_value = float(order_total) if order_total is not None else None
+    except (TypeError, ValueError):
+        return jsonify({"error": "order_total must be a number"}), 400
+
+    if LOYALTY_REWARD_THRESHOLD <= 0:
+        return jsonify({"error": "LOYALTY_REWARD_THRESHOLD must be greater than zero"}), 500
+
+    try:
+        with _db_cursor() as cur:
+            account = _find_loyalty_account(cur, customer_id, create_if_missing=False)
+            if not account:
+                return jsonify({"error": "Account not found"}), 404
+
+            available_blocks = account["points_balance"] // LOYALTY_REWARD_THRESHOLD
+            if available_blocks <= 0:
+                return jsonify({"error": "Not enough points to redeem"}), 400
+
+            blocks_to_use = rewards_requested if rewards_requested is not None else available_blocks
+            if blocks_to_use <= 0:
+                return jsonify({"error": "rewards_to_use must be positive"}), 400
+
+            blocks_to_use = min(blocks_to_use, available_blocks)
+
+            if order_total_value is not None and LOYALTY_REWARD_VALUE > 0:
+                max_blocks_from_total = int(order_total_value // LOYALTY_REWARD_VALUE)
+                blocks_to_use = min(blocks_to_use, max_blocks_from_total)
+
+            if blocks_to_use <= 0:
+                return jsonify({"error": "No redeemable rewards for this order total"}), 400
+
+            points_to_deduct = blocks_to_use * LOYALTY_REWARD_THRESHOLD
+            discount_amount = round(blocks_to_use * LOYALTY_REWARD_VALUE, 2)
+
+            cur.execute(SQL_UPDATE_BALANCE, (-points_to_deduct, account["account_id"]))
+            updated = cur.fetchone()
+
+            cur.execute(SQL_INSERT_TXN, (
+                account["account_id"],
+                "redeem",
+                points_to_deduct,
+                discount_amount,
+                data.get("description")
+            ))
+
+
+        return jsonify({
+            "message": "Reward redeemed",
+            "rewards_used": blocks_to_use,
+            "discount_amount": discount_amount,
+            "account": _serialize_account(updated)
+        })
+    except Exception as exc:
+        app.logger.exception("Unable to redeem loyalty points: %s", exc)
+        return jsonify({"error": "Unable to redeem loyalty points"}), 500
 
 
 # ==================== MANAGER API ENDPOINTS ====================
@@ -1119,4 +1341,3 @@ def get_weather():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     app.run(host="0.0.0.0", port=port, debug=os.getenv("FLASK_DEBUG") == "1")
-

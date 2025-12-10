@@ -139,7 +139,7 @@ function App() {
       case 'login':
         return <LoginPage onLoginSuccess={handleLoginSuccess} />;
       case 'kiosk':
-        return <CustomerKiosk />;
+        return <CustomerKiosk user={user} />;
       case 'manager':
         return isManager ? <ManagerPage /> : <LoginPage onLoginSuccess={handleLoginSuccess} />;
       case 'employee':
@@ -153,7 +153,6 @@ function App() {
     <div className="app-container">
       <Navigation weather={weather} />
       {renderCurrentPage()}
-      <AccessibilityPanel />
       <AccessibilityPanel />
     </div>
   );

@@ -37,32 +37,9 @@ function AccessibilityPanel() {
   };
 
   const applyMagnification = (level) => {
-    const root = document.documentElement;
-    // Create or get the app container content wrapper
-    let contentWrapper = document.getElementById('app-content-wrapper');
-    
-    if (!contentWrapper) {
-      // If wrapper doesn't exist, find the app container and wrap its children
-      const appContainer = document.querySelector('.app-container');
-      if (appContainer && !appContainer.querySelector('#app-content-wrapper')) {
-        contentWrapper = document.createElement('div');
-        contentWrapper.id = 'app-content-wrapper';
-        
-        // Move all children except accessibility panel to the wrapper
-        const children = Array.from(appContainer.children);
-        children.forEach(child => {
-          if (!child.classList.contains('accessibility-panel')) {
-            contentWrapper.appendChild(child);
-          }
-        });
-        appContainer.appendChild(contentWrapper);
-      }
-    }
-    
-    if (contentWrapper) {
-      contentWrapper.style.zoom = (level) + '%';
-    }
-    
+    // Use body zoom to avoid reparenting React-managed nodes
+    document.body.style.zoom = `${level}%`;
+
     localStorage.setItem('a11y-magnification', level.toString());
   };
 
@@ -95,6 +72,7 @@ function AccessibilityPanel() {
     setMagnification(100);
     applyContrastMode('normal');
     applyMagnification(100);
+    document.body.style.zoom = '100%';
     localStorage.removeItem('a11y-contrast');
     localStorage.removeItem('a11y-magnification');
   };

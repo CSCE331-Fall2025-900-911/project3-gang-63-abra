@@ -8,3 +8,4 @@ my-app/node_modules/
 backend/.env
 my-app/.env
 .vercel
+.venv/
