@@ -1,0 +1,56 @@
+SCRUM Meeting 9 for project3-gang-63-abra
+Prepared by: Mason Nguyen Meeting Date: 12/05/25
+
+Meeting Attendees:
+Zaheer Sufi
+Mason Nguyen
+Prisha Sharma
+Athul Mohanram
+
+Meeting Agenda Items:
+- Final review of Sprint 3 deliverables (Employee + Manager Panels)
+- Discuss project submissions for sprint end
+
+Status Update Since Last Meeting
+Accomplishments:
+- Employee Panel and Manager Page UI successfully integrated with backend APIs
+- Product backlog updated to include Cart functionality and customization features
+- Manager dashboard (sales summary) built and verified
+- Initial offline order queue implemented and tested for local storage functionality
+
+Tasks Completed:
+Task Description: Implement staff scheduling interface
+Assigned to: Prisha Sharma
+Completed?: Yes
+
+Task Description: Implement offline order queue (local storage)
+Assigned to: Athul Mohanram
+Completed?: Yes
+
+Task Description: Cache recent orders for quick reordering
+Assigned to: Mason Nguyen
+Completed?: Yes
+
+Task Description: Conduct usability testing
+Assigned to: Zaheer Sufi
+Completed?: Yes
+
+Before The Next Meeting
+Plans:
+- Prepare final submission for project end
+
+Task Assignments:
+Task Description: Final implementation for Manager Panel
+Assigned to: Prisha Sharma
+
+Task Description: Complete integration testing
+Assigned to: Athul Mohanram
+
+Task Description: Fully implement functionality for Employee Panel
+Assigned to: Mason Nguyen
+
+Task Description: Complete final deployment and team documentation
+Assigned to: Zaheer Sufi
+
+Minutes from Previous Meeting:  
+In the 12/01 meeting, the team reviewed progress on the Employee and Manager panels, confirming that the basic UI was integrated with backend APIs and the product backlog was updated with Cart and customization tasks. Completed tasks included building the manager dashboard, implementing error-handling middleware, configuring S3 for menu images, and collecting feedback to update wireframes. For the next sprint, the team planned to implement the staff scheduling interface, add recent order caching for quick reordering, implement the offline order queue, and conduct usability testing.
