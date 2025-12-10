@@ -609,75 +609,145 @@ export default function CustomerKiosk({ user }) {
             )}
           </>
         )}
+        
+        {phase === "checkout" && (() => {
+          const SALES_TAX_RATE = 0.0825;
 
-        {phase === "checkout" && (
-          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} className="bg-white shadow-lg rounded-2xl p-6 mt-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-2xl font-semibold">Your Order</h2>
-                <p className="text-gray-500">Review and confirm your items</p>
+          // Calculate subtotal safely
+          let subtotal = 0;
+          cart.forEach((item) => {
+            const itemTotal = perItemTotal(item) || 0;
+            const qty = item.qty || 0;
+            subtotal += itemTotal * qty;
+          });
+
+          // Calculate tax and total
+          const tax = subtotal * SALES_TAX_RATE;
+          const total = subtotal + tax;
+          const totalDue = Math.max(total - (appliedDiscount || 0), 0);
+
+          // Format numbers for display
+          const displaySubtotal = subtotal.toFixed(2);
+          const displayTax = tax.toFixed(2);
+          const displayTotalDue = totalDue.toFixed(2);
+
+          // Place order including employee_id: 16
+          const handlePlaceOrder = async () => {
+            if (!cart.length) return;
+            setPlacingOrder(true);
+            try {
+              const orderPayload = {
+                items: cart.map((item) => ({
+                  id: item.id,
+                  name: item.name,
+                  price: item.price,
+                  qty: item.qty,
+                  toppings: item.toppings,
+                  iceLevel: item.iceLevel,
+                  sugarLevel: item.sugarLevel,
+                })),
+                total: totalDue,
+                employee_id: 16, // <-- Added employee ID
+              };
+
+              // Submit order to backend (replace with your API call)
+              await placeOrder(orderPayload);
+
+              if (customerId) {
+                const res = await earnLoyaltyPoints(customerId, totalDue, "Kiosk order");
+                setLoyalty(res.account || loyalty);
+                await refreshLoyalty();
+              }
+
+              setCart([]);
+              resetDiscounts();
+              setPhase("confirmed");
+            } catch (e) {
+              setError("Order placed locally, but we could not update points.");
+              setPhase("confirmed");
+            } finally {
+              setPlacingOrder(false);
+            }
+          };
+
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white shadow-lg rounded-2xl p-6 mt-6"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold">Your Order</h2>
+                  <p className="text-gray-500">Review and confirm your items</p>
+                </div>
+                <button className="text-gray-500" onClick={() => setPhase("browsing")}>
+                  <X />
+                </button>
               </div>
-              <button className="text-gray-500" onClick={() => setPhase("browsing")}>
-                <X />
-              </button>
-            </div>
 
-            <div className="divide-y mt-4">
-              {cart.map((item) => (
-                <div key={item.key} className="flex justify-between items-center py-3">
-                  <div>
-                    <h3 className="font-semibold">{item.name}</h3>
-                    <p className="text-gray-500">
-                      ${(perItemTotal(item)).toFixed(2)} each
-                    </p>
-                    {item.toppings?.length > 0 && (
+              <div className="divide-y mt-4">
+                {cart.map((item) => (
+                  <div key={item.key} className="flex justify-between items-center py-3">
+                    <div>
+                      <h3 className="font-semibold">{item.name}</h3>
+                      <p className="text-gray-500">${perItemTotal(item).toFixed(2)} each</p>
+                      {item.toppings?.length > 0 && (
+                        <p className="text-xs text-gray-400">
+                          + {item.toppings.map((t) => `${t.name} (${t.price ? `$${Number(t.price).toFixed(2)}` : "included"})`).join(", ")}
+                        </p>
+                      )}
                       <p className="text-xs text-gray-400">
-                        + {item.toppings.map((t) => `${t.name} (${t.price ? `$${Number(t.price).toFixed(2)}` : "included"})`).join(", ")}
+                        Ice: {item.iceLevel || "Regular Ice"} • Sugar: {item.sugarLevel || "100%"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button className="px-2 py-2 rounded-lg bg-gray-100" onClick={() => updateQty(item.key, -1)}>
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="w-6 text-center">{item.qty}</span>
+                      <button className="px-2 py-2 rounded-lg bg-gray-100" onClick={() => updateQty(item.key, 1)}>
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {cart.length > 0 && (
+                <div className="flex justify-between items-center mt-6 flex-col md:flex-row gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold">Subtotal: ${displaySubtotal}</h3>
+                    {appliedDiscount > 0 && (
+                      <p className="text-sm text-green-600">
+                        Rewards discount: -${roundDown(appliedDiscount).toFixed(2)} ({rewardsUsed} used)
                       </p>
                     )}
-                    <p className="text-xs text-gray-400">
-                      Ice: {item.iceLevel || "Regular Ice"} • Sugar: {item.sugarLevel || "100%"}
-                    </p>
+                    <p className="text-lg font-bold mt-1">Tax: ${displayTax}</p>
+                    <p className="text-2xl font-bold mt-1">Total due: ${displayTotalDue}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button className="px-2 py-2 rounded-lg bg-gray-100" onClick={() => updateQty(item.key, -1)}>
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className="w-6 text-center">{item.qty}</span>
-                    <button className="px-2 py-2 rounded-lg bg-gray-100" onClick={() => updateQty(item.key, 1)}>
-                      <Plus className="w-4 h-4" />
-                    </button>
+
+                  <div className="flex gap-3 flex-wrap">
+                    <Button
+                      className="bg-white text-pink-500 border border-pink-200 hover:bg-pink-50 disabled:opacity-50"
+                      onClick={goToRewards}
+                      disabled={!customerId}
+                    >
+                      Use Rewards
+                    </Button>
+                    <Button className="bg-gray-400 hover:bg-gray-500" onClick={() => setPhase("browsing")}>
+                      Keep Browsing
+                    </Button>
+                    <Button onClick={handlePlaceOrder} disabled={placingOrder}>
+                      {placingOrder ? "Placing..." : "Place Order"}
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
+              )}
+            </motion.div>
+          );
+        })()}
 
-            <div className="flex justify-between items-center mt-6">
-              <div>
-                <h3 className="text-lg font-bold">Subtotal: ${total.toFixed(2)}</h3>
-                {appliedDiscount > 0 && (
-                  <p className="text-sm text-green-600">Rewards discount: -${appliedDiscount.toFixed(2)} ({rewardsUsed} used)</p>
-                )}
-                <p className="text-lg font-bold mt-1">Total due: ${totalWithDiscount.toFixed(2)}</p>
-              </div>
-              <div className="flex gap-3">
-                <Button
-                  className="bg-white text-pink-500 border border-pink-200 hover:bg-pink-50 disabled:opacity-50"
-                  onClick={goToRewards}
-                  disabled={!customerId}
-                >
-                  Use Rewards
-                </Button>
-                <Button className="bg-gray-400 hover:bg-gray-500" onClick={() => setPhase("browsing")}>
-                  Keep Browsing
-                </Button>
-                <Button onClick={placeOrder} disabled={placingOrder}>
-                  {placingOrder ? "Placing..." : "Place Order"}
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        )}
         {phase === "rewards" && (
           <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} className="bg-white shadow-lg rounded-2xl p-6 mt-6">
             <div className="flex items-start justify-between">
