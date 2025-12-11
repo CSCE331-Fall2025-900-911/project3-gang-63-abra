@@ -638,48 +638,47 @@ export default function CustomerKiosk({ user }) {
 
           // Place order including employee_id: 16
           const handlePlaceOrder = async () => {
-  if (!cart.length) return;
-  setPlacingOrder(true);
+            if (!cart.length) return;
+            setPlacingOrder(true);
 
-  try {
-    // Flatten drinks + toppings
-    const flattenedItems = cart.flatMap(item => {
-      const drinkItem = { item_id: item.id, quantity: item.qty };
-      const toppingItems = item.toppings?.map(t => ({
-        item_id: t.id,
-        quantity: t.qty ?? 1
-      })) || [];
-      return [drinkItem, ...toppingItems];
-    });
+            try {
+              // Flatten drinks + toppings
+              const flattenedItems = cart.flatMap(item => {
+                const drinkItem = { item_id: item.id, quantity: item.qty };
+                const toppingItems = item.toppings?.map(t => ({
+                  item_id: t.id,
+                  quantity: t.qty ?? 1
+                })) || [];
+                return [drinkItem, ...toppingItems];
+              });
 
-    const orderPayload = {
-      employee_id: 16,      // Backend expects snake_case
-      items: flattenedItems // Now includes toppings too
-    };
+              const orderPayload = {
+                employee_id: 16,      // Backend expects snake_case
+                items: flattenedItems // Now includes toppings too
+              };
 
-    console.log("Submitting order payload:", orderPayload);
+              console.log("Submitting order payload:", orderPayload);
 
-    await submitOrder(orderPayload);
+              await submitOrder(orderPayload);
 
-    if (customerId) {
-      const res = await earnLoyaltyPoints(customerId, totalDue, "Kiosk order");
-      setLoyalty(res.account || loyalty);
-      await refreshLoyalty();
-    }
+              if (customerId) {
+                const res = await earnLoyaltyPoints(customerId, totalDue, "Kiosk order");
+                setLoyalty(res.account || loyalty);
+                await refreshLoyalty();
+              }
 
-    setCart([]);
-    resetDiscounts();
-    setPhase("confirmed");
+              setCart([]);
+              resetDiscounts();
+              setPhase("confirmed");
 
-  } catch (err) {
-    console.error("ORDER ERROR:", err);
-    setError("Order failed or loyalty points failed.");
-    setPhase("confirmed");
-  } finally {
-    setPlacingOrder(false);
-  }
-};
-
+            } catch (err) {
+              console.error("ORDER ERROR:", err);
+              setError("Order failed or loyalty points failed.");
+              setPhase("confirmed");
+            } finally {
+              setPlacingOrder(false);
+            }
+          };
           return (
             <motion.div
               initial={{ opacity: 0, y: 50 }}
