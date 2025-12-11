@@ -230,7 +230,9 @@ export default function CustomerKiosk({ user }) {
 
   const makeLineKey = (drink, toppingSelections = []) => {
     const toppingIds = toppingSelections.map((t) => t.id ?? t.name ?? "t");
-    return `${drink.id ?? drink.name}:${toppingIds.sort().join("|")}`;
+    const ice = drink.iceLevel || "Regular Ice";
+    const sugar = drink.sugarLevel || "100%";
+    return `${drink.id ?? drink.name}:${toppingIds.sort().join("|")}:${ice}:${sugar}`;
   };
 
   const addToCart = (drink, toppingSelections = []) => {
@@ -250,6 +252,8 @@ export default function CustomerKiosk({ user }) {
           category: drink.category,
           toppings: toppingSelections,
           qty: 1,
+          iceLevel: drink.iceLevel || "Regular Ice",
+          sugarLevel: drink.sugarLevel || "100%",
         },
       ];
     });
@@ -866,7 +870,7 @@ export default function CustomerKiosk({ user }) {
             <section className="space-y-3">
               <p className="text-sm font-semibold text-gray-700">Ice Level</p>
               <div className="flex flex-wrap gap-3">
-                {["Extra Ice", "Regular Ice", "Less Ice", "No Ice"].map((lvl) => (
+                {["Extra Ice", "Regular Ice", "Less Ice", "No Ice", "Hot"].map((lvl) => (
                   <button
                     key={lvl}
                     onClick={() => setIceLevel(lvl)}
@@ -886,7 +890,7 @@ export default function CustomerKiosk({ user }) {
             <section className="space-y-3 mt-6">
               <p className="text-sm font-semibold text-gray-700">Sugar Level</p>
               <div className="flex flex-wrap gap-3">
-                {["0%", "25%", "50%", "75%", "100%"].map((lvl) => (
+                {["0%", "25%", "50%", "75%", "100%", "120%"].map((lvl) => (
                   <button
                     key={lvl}
                     onClick={() => setSugarLevel(lvl)}
