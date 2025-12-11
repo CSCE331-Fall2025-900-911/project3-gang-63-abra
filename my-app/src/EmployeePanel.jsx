@@ -100,9 +100,24 @@ export default function EmployeePanel({ onBack }) {
     if (orderItems.length === 0) return alert("No items in order");
 
     try {
+      // Flatten drinks + toppings
+      const flattenedItems = orderItems.flatMap((i) => {
+        const drinkItem = { item_id: i.itemId, quantity: i.qty };
+
+        const toppingItems =
+          i.toppings?.map((tName) => {
+            // find topping by name in menu
+            const topping = menu.find((m) => m.name === tName);
+            if (!topping) return null;
+            return { item_id: topping.id, quantity: i.qty };
+          }).filter(Boolean) || [];
+
+        return [drinkItem, ...toppingItems];
+      });
+
       const result = await submitOrder({
-        employeeId,
-        items: orderItems.map((i) => ({ itemId: i.itemId, qty: i.qty })),
+        employee_id: employeeId, // backend expects snake_case
+        items: flattenedItems,
       });
 
       alert(
@@ -117,7 +132,7 @@ export default function EmployeePanel({ onBack }) {
     } catch (err) {
       alert("Error submitting order: " + err.message);
     }
-  }
+}
 
   return (
     <div className="flex p-4 gap-4">
