@@ -1,0 +1,59 @@
+SCRUM Meeting 8 for project3-gang-63-abra
+Prepared by: Prisha Sharma Meeting Date: 12/01/25
+
+Meeting Attendees:
+Zaheer Sufi
+Mason Nguyen
+Prisha Sharma
+Athul Mohanram
+
+Meeting Agenda Items:
+- Review to-dos for Employee and Manager panels
+- Check progress on back-end error handling 
+- Assign implementation tasks for the second half of the sprint
+
+Status Update Since Last Meeting
+Accomplishments:
+- Basic Employee Panel and Manager Page UI integrated with backend APIs
+- Product backlog updated to include Cart and customization tasks
+
+Tasks Completed:
+Task Description: Build manager dashboard (sales summary)
+Assigned to: Prisha Sharma
+Completed?: Yes
+
+Task Description: Build error-handling middleware for API
+Assigned to: Athul Mohanram
+Completed?: Yes
+
+Task Description: Configure S3 for image assets (menu photos)
+Assigned to: Mason Nguyen
+Completed?: Yes
+
+Task Description: Collect feedback & update wireframes
+Assigned to: Zaheer Sufi
+Completed?: Yes
+
+Before The Next Meeting
+Plans:
+- Prisha to implement staff scheduling interface
+- Mason to implement recent order caching for quick reordering functionality
+- Athul to implement offline order queue using local storage
+- Zaheer to conduct usability test #1 and document findings
+
+
+Task Assignments:
+Task Description: Implement staff scheduling interface
+Assigned to: Prisha Sharma
+
+Task Description: Implement offline order queue (local storage)
+Assigned to: Athul Mohanram
+
+Task Description: Cache recent orders for quick reordering
+Assigned to: Mason Nguyen
+
+Task Description: Conduct usability testing
+Assigned to: Zaheer Sufi
+
+Minutes from Previous Meeting:  
+In the previous meeting (11/25), the team transitioned into implementation for Sprint 3. The backend was fully deployed, and basic layouts for the Employee Panel and Manager Page were presented by Mason and Prisha. The product backlog was finalized, story points assigned, and responsibilities distributed for key tasks, including error-handling, S3 configuration, and dashboard development. The team discussed potential roadblocks such as backend reliability, asset loading, and UI alignment, and agreed to prioritize expanding Employee and Manager page functionality in the upcoming sprint.

@@ -1,0 +1,48 @@
+SCRUM Meeting 7 for project3-gang-63-abra
+Prepared by: Zaheer Sufi Meeting Date: 11/25/25
+
+Meeting Attendees:
+Zaheer Sufi
+Mason Nguyen
+Prisha Sharma
+Athul Mohanram
+
+Meeting Agenda Items:
+- Assign stories to individual people
+- Discuss any potential roadblocks that could hinder progress
+- Status Update Since Last Meeting
+
+Status Update Since Last Meeting
+Accomplishments:
+- Backend fully deployed
+- Basic Employee Panel Page and Manager Page finished
+
+Tasks Completed:
+Task Description: Create product backlog
+Assigned to: Everyone
+Completed?: Yes
+
+Task Description: Assign points to stories
+Assigned to: Everyone
+Completed?: Yes
+
+Before The Next Meeting
+Plans:
+- Error-handling for backend
+- Develop Employee and Manager pages
+
+Task Assignments:
+Task Description: Build manager dashboard (sales summary)
+Assigned to: Prisha Sharma
+
+Task Description: Build error-handling middleware for API
+Assigned to: Athul Mohanram
+
+Task Description: Configure S3 for image assets (menu photos)
+Assigned to: Mason Nguyen
+
+Task Description: Collect feedback & update wireframes
+Assigned to: Zaheer Sufi
+
+Minutes from Previous Meeting:  
+During the previous meeting, the team reviewed previous sprint deliverables and prepared for Sprint 3. Google OAuth was confirmed fully functional, accessibility features (Screen Magnifier and High Contrast) for the "Vishnu" persona were implemented, and the Weather API was integrated successfully. Backend API calls for the Employee Panel were completed, and the Cart interface was built. The team assigned tasks for the next sprint, including fully implementing Employee Panel functionality, developing inventory management logic, beginning payment gateway integration, and preparing UX testing. The Employee Panel API calls were operational but still required full frontend integration.
