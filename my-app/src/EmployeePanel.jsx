@@ -10,7 +10,7 @@ export default function EmployeePanel({ onBack }) {
   const [qty, setQty] = useState("1");
 
   const [customizingItem, setCustomizingItem] = useState(null);
-  const [iceLevel, setIceLevel] = useState("Regular");
+  const [iceLevel, setIceLevel] = useState("Regular Ice");
   const [sugarLevel, setSugarLevel] = useState("100%");
   const [selectedToppings, setSelectedToppings] = useState([]);
 
@@ -28,7 +28,7 @@ export default function EmployeePanel({ onBack }) {
 
   function customizeDrink(drink) {
     setCustomizingItem(drink);
-    setIceLevel("Regular");
+    setIceLevel("Regular Ice");
     setSugarLevel("100%");
     setSelectedToppings([]);
   }
@@ -242,7 +242,7 @@ export default function EmployeePanel({ onBack }) {
             <div className="mb-4">
               <div className="font-semibold mb-1">Ice Level:</div>
               <div className="flex gap-2 flex-wrap">
-                {["None", "Light", "Regular", "Extra"].map((level) => (
+                {["Extra Ice", "Regular Ice", "Less Ice", "No Ice", "Hot"].map((level) => (
                   <button
                     key={level}
                     className={`px-3 py-1 rounded border ${
@@ -260,7 +260,7 @@ export default function EmployeePanel({ onBack }) {
             <div className="mb-4">
               <div className="font-semibold mb-1">Sugar Level:</div>
               <div className="flex gap-2 flex-wrap">
-                {["0%", "25%", "50%", "75%", "100%"].map((level) => (
+                {["0%", "25%", "50%", "75%", "100%", "120%"].map((level) => (
                   <button
                     key={level}
                     className={`px-3 py-1 rounded border ${
