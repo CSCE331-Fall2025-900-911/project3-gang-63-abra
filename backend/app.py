@@ -202,6 +202,102 @@ def get_menu():
         return jsonify({"error": "Unable to load menu"}), 500
     return jsonify(menu)
 
+@app.route("/api/order", methods=["POST", "OPTIONS"])
+def submit_order():
+    # --- CORS PRE-FLIGHT ---
+    if request.method == "OPTIONS":
+        return (
+            "",
+            200,
+            {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type",
+            },
+        )
+
+    headers = {"Access-Control-Allow-Origin": "*"}
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON"}), 400, headers
+
+    employee_id = data.get("employee_id", 16)
+    items = data.get("items", [])
+
+    if not items:
+        return jsonify({"error": "No items provided"}), 400, headers
+
+    try:
+        with _db_cursor() as cur:
+            # ---- subtotal calculation ----
+            subtotal = 0.0
+            for item in items:
+                item_id = item["item_id"]
+                qty = item["quantity"]
+
+                cur.execute("SELECT price FROM item WHERE item_id = %s", (item_id,))
+                row = cur.fetchone()
+
+                if row and row["price"] is not None:
+                    subtotal += float(row["price"]) * qty
+
+            tax_rate = 0.0825
+            tax = round(subtotal * tax_rate, 2)
+            total = round(subtotal + tax, 2)
+
+            # ---- INSERT into order_history ----
+            cur.execute(
+                """
+                INSERT INTO order_history (employee_id, price, date, time)
+                VALUES (%s, %s, CURRENT_DATE, CURRENT_TIME)
+                RETURNING order_id
+                """,
+                (employee_id, subtotal),
+            )
+            order_id = cur.fetchone()["order_id"]
+
+            # ---- INSERT junction + deduct ingredients ----
+            for item in items:
+                cur.execute(
+                    """
+                    INSERT INTO order_junction (order_id, item_id, quantity)
+                    VALUES (%s, %s, %s)
+                    """,
+                    (order_id, item["item_id"], item["quantity"]),
+                )
+
+                # Deduct ingredients from stock just like Java
+                cur.execute(
+                    """
+                    UPDATE ingredients
+                    SET stock = stock - %s
+                    WHERE ingredient_id IN (
+                        SELECT ingredientid
+                        FROM recipes
+                        WHERE id = %s
+                    )
+                    """,
+                    (item["quantity"], item["item_id"]),
+                )
+
+        # If no exceptions: commit happens automatically due to context manager
+        return (
+            jsonify(
+                {
+                    "order_id": order_id,
+                    "subtotal": subtotal,
+                    "tax": tax,
+                    "total": total,
+                }
+            ),
+            200,
+            headers,
+        )
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500, headers
+
 
 @app.route('/auth/google')
 def google_auth():

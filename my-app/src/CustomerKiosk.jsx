@@ -9,6 +9,7 @@ const getItemImage = (name) => {
   const key = name.toLowerCase().replace(/\s+/g, " ");
   return itemImages[key] || fallbackImage;
 };
+import {submitOrder} from "./api";
 
 import { fetchMenu, fetchLoyaltyAccount, earnLoyaltyPoints, redeemLoyaltyPoints, fetchWeather } from "./api";
 
@@ -635,36 +636,67 @@ export default function CustomerKiosk({ user }) {
           const handlePlaceOrder = async () => {
             if (!cart.length) return;
             setPlacingOrder(true);
+
             try {
+              // Flatten drinks & toppings into a single array of items
+              const flattenedItems = cart.flatMap((item) => {
+                // Drink item
+                const drinkItem = {
+                  item_id: item.id,
+                  quantity: item.qty,
+                };
+
+                // Toppings: each uses its own quantity, not the drink's qty
+                const toppingItems = item.toppings?.map((t) => ({
+                  item_id: t.id,
+                  quantity: t.qty ?? 1, // default 1 if not set
+                })) || [];
+
+                return [drinkItem, ...toppingItems];
+              });
+
               const orderPayload = {
-                items: cart.map((item) => ({
-                  id: item.id,
-                  name: item.name,
-                  price: item.price,
-                  qty: item.qty,
-                  toppings: item.toppings,
-                  iceLevel: item.iceLevel,
-                  sugarLevel: item.sugarLevel,
-                })),
-                total: totalDue,
-                employee_id: 16, // <-- Added employee ID
+                employee_id: 16,  // correct default employee
+                items: flattenedItems,
               };
 
-              // Submit order to backend (replace with your API call)
-              await placeOrder(orderPayload);
+              try {
+            await submitOrder(orderPayload);
 
+            if (customerId) {
+              const res = await earnLoyaltyPoints(customerId, totalDue, "Kiosk order");
+              setLoyalty(res.account || loyalty);
+              await refreshLoyalty();
+            }
+
+          } catch (err) {
+            console.error("ORDER ERROR:", err);
+            setError("Order placed locally, but reward points failed.");
+          } finally {
+            // ALWAYS execute even if order fails
+            setCart([]);
+            resetDiscounts();
+            setPhase("confirmed");
+            setPlacingOrder(false);
+          }
+
+              // Loyalty points (unchanged)
               if (customerId) {
                 const res = await earnLoyaltyPoints(customerId, totalDue, "Kiosk order");
                 setLoyalty(res.account || loyalty);
                 await refreshLoyalty();
               }
 
+              // Reset UI state
               setCart([]);
               resetDiscounts();
               setPhase("confirmed");
-            } catch (e) {
-              setError("Order placed locally, but we could not update points.");
+
+            } catch (err) {
+              console.error("ORDER ERROR:", err);
+              setError("Order placed locally, but reward points failed.");
               setPhase("confirmed");
+
             } finally {
               setPlacingOrder(false);
             }
