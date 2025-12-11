@@ -1,9 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  fetchMenu,
-  checkStock,
-  submitOrder,
-} from "./api";
+import { fetchMenu, checkStock, submitOrder } from "./api";
 
 const SALES_TAX_RATE = 0.0825;
 
@@ -13,7 +9,11 @@ export default function EmployeePanel({ onBack }) {
   const [employeeId, setEmployeeId] = useState("");
   const [qty, setQty] = useState("1");
 
-  // Load menu (drinks + toppings)
+  const [customizingItem, setCustomizingItem] = useState(null);
+  const [iceLevel, setIceLevel] = useState("Regular");
+  const [sugarLevel, setSugarLevel] = useState("100%");
+  const [selectedToppings, setSelectedToppings] = useState([]);
+
   useEffect(() => {
     (async () => {
       const data = await fetchMenu();
@@ -24,38 +24,63 @@ export default function EmployeePanel({ onBack }) {
   const drinks = menu.filter((m) => !m.isTopping);
   const toppings = menu.filter((m) => m.isTopping);
 
-  function roundDown(v) {
-    return Math.floor(v * 100) / 100;
+  const roundDown = (v) => Math.floor(v * 100) / 100;
+
+  function customizeDrink(drink) {
+    setCustomizingItem(drink);
+    setIceLevel("Regular");
+    setSugarLevel("100%");
+    setSelectedToppings([]);
   }
 
-  async function addItem(item) {
-    console.log("Menu items:", menu);
-    const q = parseInt(qty, 10);
-    if (!q || q <= 0) return alert("Quantity must be positive");
+  async function addCustomizedItem() {
+    if (!customizingItem) return;
 
-    // Stock check API
-    // const check = await checkStock(item.id, q);
+    const quantity = parseInt(qty, 10);
+    if (!quantity || quantity <= 0) return alert("Quantity must be positive");
 
-    // if (!check.ok) {
-    //   alert(
-    //     `Not enough stock for ${check.ingredient}\n` +
-    //     `Needed: ${check.needed}, Available: ${check.available}`
-    //   );
-    //   return;
+    // try {
+    //   const stockResult = await checkStock(customizingItem.id, quantity);
+    //   if (!stockResult.ok) {
+    //     return alert(
+    //       `Not enough stock for ${stockResult.ingredient}\n` +
+    //         `Needed: ${stockResult.needed}, Available: ${stockResult.available}`
+    //     );
+    //   }
+
+    //   for (let t of selectedToppings) {
+    //     const res = await checkStock(t.id, quantity);
+    //     if (!res.ok) {
+    //       return alert(
+    //         `Not enough stock for ${res.ingredient}\n` +
+    //           `Needed: ${res.needed}, Available: ${res.available}`
+    //       );
+    //     }
+    //   }
+    // } catch (err) {
+    //   return alert("Error checking stock: " + err.message);
     // }
 
-    const subtotal = roundDown(item.price * q);
+    const baseSubtotal = roundDown(customizingItem.price * quantity);
+    const toppingsSubtotal = roundDown(
+      selectedToppings.reduce((sum, t) => sum + t.price * quantity, 0)
+    );
+    const subtotal = roundDown(baseSubtotal + toppingsSubtotal);
 
     setOrderItems((prev) => [
       ...prev,
       {
-        itemId: item.id,
-        name: item.name,
-        qty: q,
+        itemId: customizingItem.id,
+        name: customizingItem.name,
+        qty: quantity,
         subtotal,
-        isTopping: item.isTopping,
+        iceLevel,
+        sugarLevel,
+        toppings: selectedToppings.map((t) => t.name),
       },
     ]);
+
+    setCustomizingItem(null);
   }
 
   function removeItem(index) {
@@ -66,10 +91,7 @@ export default function EmployeePanel({ onBack }) {
     setOrderItems([]);
   }
 
-  // compute totals
-  const subtotal = roundDown(
-    orderItems.reduce((sum, it) => sum + it.subtotal, 0)
-  );
+  const subtotal = roundDown(orderItems.reduce((sum, it) => sum + it.subtotal, 0));
   const tax = roundDown(subtotal * SALES_TAX_RATE);
   const total = roundDown(subtotal + tax);
 
@@ -80,32 +102,27 @@ export default function EmployeePanel({ onBack }) {
     try {
       const result = await submitOrder({
         employeeId,
-        items: orderItems.map((i) => ({
-          itemId: i.itemId,
-          qty: i.qty,
-        })),
+        items: orderItems.map((i) => ({ itemId: i.itemId, qty: i.qty })),
       });
 
       alert(
         `Order submitted!\n` +
-        `Order ID: ${result.orderId}\n` +
-        `Subtotal: $${result.subtotal}\n` +
-        `Tax: $${result.tax}\n` +
-        `Total: $${result.total}`
+          `Order ID: ${result.orderId}\n` +
+          `Subtotal: $${result.subtotal}\n` +
+          `Tax: $${result.tax}\n` +
+          `Total: $${result.total}`
       );
 
       clearOrder();
     } catch (err) {
-      alert("Error: " + err.message);
+      alert("Error submitting order: " + err.message);
     }
   }
 
   return (
     <div className="flex p-4 gap-4">
-      
       {/* Left Column */}
       <div className="flex flex-col gap-4 w-2/3">
-
         {/* Employee ID + Qty */}
         <div className="flex gap-4 items-center">
           <label>Employee ID:</label>
@@ -130,27 +147,10 @@ export default function EmployeePanel({ onBack }) {
               <button
                 key={d.id}
                 className="border p-4 rounded bg-green-50 hover:bg-green-100"
-                onClick={() => addItem(d)}
+                onClick={() => customizeDrink(d)}
               >
-                {i + 1} - {d.name}
+                {i + 1} - {d.name} {d.category ? `(${d.category})` : ""}
                 <div>${d.price.toFixed(2)}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Toppings */}
-        <div className="border rounded p-3">
-          <h2 className="font-bold mb-2">Toppings</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {toppings.map((t, i) => (
-              <button
-                key={t.id}
-                className="border p-4 rounded bg-blue-50 hover:bg-blue-100"
-                onClick={() => addItem(t)}
-              >
-                +{i + 1} {t.name}
-                <div>${t.price.toFixed(2)}</div>
               </button>
             ))}
           </div>
@@ -159,11 +159,9 @@ export default function EmployeePanel({ onBack }) {
 
       {/* Right Column (Cart + Totals) */}
       <div className="w-1/3 border rounded p-4 flex flex-col">
-
         <h2 className="font-bold mb-2">Cart</h2>
-
         <div className="flex-1 overflow-y-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-left text-sm">
             <thead>
               <tr>
                 <th>Item</th>
@@ -175,14 +173,17 @@ export default function EmployeePanel({ onBack }) {
             <tbody>
               {orderItems.map((item, i) => (
                 <tr key={i}>
-                  <td>{item.isTopping ? " - " : ""}{item.name}</td>
+                  <td>
+                    {item.name} <br />
+                    <span className="text-xs italic">
+                      Ice: {item.iceLevel}, Sugar: {item.sugarLevel}
+                      {item.toppings.length > 0 && `, Toppings: ${item.toppings.join(", ")}`}
+                    </span>
+                  </td>
                   <td>{item.qty}</td>
                   <td>${item.subtotal.toFixed(2)}</td>
                   <td>
-                    <button
-                      className="text-red-600"
-                      onClick={() => removeItem(i)}
-                    >
+                    <button className="text-red-600" onClick={() => removeItem(i)}>
                       X
                     </button>
                   </td>
@@ -206,22 +207,99 @@ export default function EmployeePanel({ onBack }) {
             >
               Submit
             </button>
-            <button
-              className="bg-gray-400 text-white px-4 py-2 rounded"
-              onClick={clearOrder}
-            >
+            <button className="bg-gray-400 text-white px-4 py-2 rounded" onClick={clearOrder}>
               Clear
             </button>
-            <button
-              className="bg-gray-600 text-white px-4 py-2 rounded"
-              onClick={onBack}
-            >
+            <button className="bg-gray-600 text-white px-4 py-2 rounded" onClick={onBack}>
               Back
             </button>
           </div>
         </div>
-
       </div>
+
+      {/* Customization Modal */}
+      {customizingItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded shadow-xl w-2/3 max-w-2xl">
+            <h2 className="font-bold mb-4 text-lg">{customizingItem.name}</h2>
+
+            {/* Ice Level */}
+            <div className="mb-4">
+              <div className="font-semibold mb-1">Ice Level:</div>
+              <div className="flex gap-2 flex-wrap">
+                {["None", "Light", "Regular", "Extra"].map((level) => (
+                  <button
+                    key={level}
+                    className={`px-3 py-1 rounded border ${
+                      iceLevel === level ? "bg-green-500 text-white" : "bg-gray-100"
+                    }`}
+                    onClick={() => setIceLevel(level)}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Sugar Level */}
+            <div className="mb-4">
+              <div className="font-semibold mb-1">Sugar Level:</div>
+              <div className="flex gap-2 flex-wrap">
+                {["0%", "25%", "50%", "75%", "100%"].map((level) => (
+                  <button
+                    key={level}
+                    className={`px-3 py-1 rounded border ${
+                      sugarLevel === level ? "bg-yellow-500 text-white" : "bg-gray-100"
+                    }`}
+                    onClick={() => setSugarLevel(level)}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Toppings */}
+            <div className="mb-4">
+              <div className="font-semibold mb-1">Toppings:</div>
+              <div className="flex gap-2 flex-wrap">
+                {toppings.map((t) => (
+                  <button
+                    key={t.id}
+                    className={`px-3 py-1 rounded border ${
+                      selectedToppings.includes(t)
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-100"
+                    }`}
+                    onClick={() =>
+                      selectedToppings.includes(t)
+                        ? setSelectedToppings((prev) => prev.filter((x) => x.id !== t.id))
+                        : setSelectedToppings((prev) => [...prev, t])
+                    }
+                  >
+                    {t.name} (${t.price.toFixed(2)})
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end mt-6">
+              <button
+                className="bg-green-600 text-white px-4 py-2 rounded"
+                onClick={addCustomizedItem}
+              >
+                Add to Cart
+              </button>
+              <button
+                className="bg-gray-400 text-white px-4 py-2 rounded"
+                onClick={() => setCustomizingItem(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
