@@ -230,18 +230,7 @@ export async function checkStock(itemId, qty) {
   return await res.json();  // { ok: true } OR { ok: false, ingredient: "...", needed: X, available: Y }
 }
 
-export async function submitOrder({ employeeId, items }) {
-  // items = [{ itemId: number, qty: number }, ...]
-  console.log("Submitting order:", { employeeId, items });
-
-  const payload = {
-    employee_id: employeeId,
-    items: items.map((it) => ({
-      item_id: it.itemId,
-      quantity: it.qty,
-    })),
-  };
-
+export async function submitOrder(payload) {
   const res = await fetch(buildUrl("/order"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -253,7 +242,7 @@ export async function submitOrder({ employeeId, items }) {
     throw new Error(`Order failed: ${text}`);
   }
 
-  return res.json(); // should contain { order_id, subtotal, tax, total }
+  return res.json();
 }
 
 
