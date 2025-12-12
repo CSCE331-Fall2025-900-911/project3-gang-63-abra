@@ -66,29 +66,7 @@ const getItemImage = (name) => {
 const GOOGLE_TRANSLATE_SCRIPT_ID = "google-translate-script";
 const GOOGLE_COOKIE = "googtrans";
 
-const getSavedLanguage = () => {
-  if (typeof document === "undefined") return "en";
-
-  const cookie = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith(`${GOOGLE_COOKIE}=`));
-
-  if (cookie) {
-    const value = cookie.split("=")[1]; // /en/es
-    const parts = value.split("/");
-    const lang = parts[2];
-    if (lang && ALLOWED_CODES.has(lang)) return lang;
-  }
-
-  try {
-    const stored = localStorage.getItem("kioskLanguage");
-    if (stored && ALLOWED_CODES.has(stored)) return stored;
-  } catch {
-    // ignore storage errors
-  }
-
-  return "en";
-};
+const getSavedLanguage = () => "en";
 
 const persistLanguage = (lang) => {
   if (typeof document === "undefined") return;
@@ -104,15 +82,20 @@ const persistLanguage = (lang) => {
 };
 
 const applyLanguageToGoogle = (lang) => {
-  const select = document.querySelector("select.goog-te-combo");
-  if (!select) return false;
+  try {
+    const select = document.querySelector("select.goog-te-combo");
+    if (!select) return false;
 
-  if (select.value !== lang) {
-    select.value = lang;
+    if (select.value !== lang) {
+      select.value = lang;
+    }
+
+    select.dispatchEvent(new Event("change"));
+    return true;
+  } catch (err) {
+    console.warn("Failed to apply language", err);
+    return false;
   }
-
-  select.dispatchEvent(new Event("change"));
-  return true;
 };
 
 const hideGoogleUI = () => {
@@ -233,9 +216,21 @@ export default function CustomerKiosk({ user }) {
 
     let mounted = true;
     let poll;
-    const savedLanguage = getSavedLanguage();
+    const savedLanguage = getSavedLanguage(); // always "en" to avoid auto-sticking to another language
     setCurrentLanguage(savedLanguage);
+    persistLanguage(savedLanguage);
     hideGoogleUI();
+
+    const swallowRemoveChildErrors = (event) => {
+      if (typeof event?.message === "string" && event.message.includes("removeChild")) {
+        event.preventDefault();
+        event.stopImmediatePropagation?.();
+        return true;
+      }
+      return false;
+    };
+
+    window.addEventListener("error", swallowRemoveChildErrors, true);
 
     const startPollingForTranslator = () => {
       const check = () => {
@@ -295,6 +290,7 @@ export default function CustomerKiosk({ user }) {
     return () => {
       mounted = false;
       if (poll) clearInterval(poll);
+      window.removeEventListener("error", swallowRemoveChildErrors, true);
     };
   }, []);
 
