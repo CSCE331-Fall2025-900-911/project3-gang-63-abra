@@ -30,6 +30,7 @@ const UI_STRINGS = {
     signedInAs: (email) => `Signed in as ${email}`,
     notSignedIn: "Not signed in",
     signOut: "Sign out",
+    languageAndAccessibility: "Language & Accessibility",
   },
   es: {
     loginPage: "Página de inicio de sesión",
@@ -39,12 +40,13 @@ const UI_STRINGS = {
     signedInAs: (email) => `Conectado como ${email}`,
     notSignedIn: "No has iniciado sesión",
     signOut: "Cerrar sesión",
+    languageAndAccessibility: "Lenguaje y accesibilidad",
   },
 };
 
 function App() {
   // This state will control which page is visible.
-  const [currentPage, setCurrentPage] = useState('kiosk');
+  const [currentPage, setCurrentPage] = useState('login');
   const [user, setUser] = useState(null);
   const [weather, setWeather] = useState(null);
   const [language, setLanguage] = useState('en');
@@ -140,7 +142,7 @@ function App() {
           <>
             <button onClick={() => navigate('manager')}>{UI_STRINGS[language].managerPage}</button>
             <button onClick={() => navigate('employee')}>{UI_STRINGS[language].employeePanel}</button>
-            <button onClick={() => navigate('language-accessibility')}>Language & Accessibility</button>
+            <button onClick={() => navigate('language-accessibility')}>{UI_STRINGS[language].languageAndAccessibility}</button>
           </>
         )}
       </div>

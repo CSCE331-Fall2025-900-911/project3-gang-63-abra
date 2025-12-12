@@ -229,38 +229,44 @@ const OrderTrendsTab = () => {
               Top Selling Items
             </h3>
             {trends.top_items.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-3">Rank</th>
-                      <th className="text-left py-2 px-3">Item Name</th>
-                      <th className="text-right py-2 px-3">Quantity Sold</th>
-                      <th className="text-right py-2 px-3">Revenue</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {trends.top_items.map((item, index) => (
-                      <tr key={item.item_id} className="border-b hover:bg-gray-50">
-                        <td className="py-2 px-3">
-                          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-sm font-bold ${
-                            index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                            index === 1 ? 'bg-gray-100 text-gray-700' :
-                            index === 2 ? 'bg-orange-100 text-orange-700' :
-                            'bg-gray-50 text-gray-500'
-                          }`}>
-                            {index + 1}
-                          </span>
-                        </td>
-                        <td className="py-2 px-3 font-medium">{item.name}</td>
-                        <td className="py-2 px-3 text-right">{item.total_sold}</td>
-                        <td className="py-2 px-3 text-right text-green-600 font-semibold">
-                          ${item.revenue.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {trends.top_items.map((item, index) => {
+                  const rankColors = [
+                    "bg-yellow-100 text-yellow-700",
+                    "bg-gray-100 text-gray-700",
+                    "bg-orange-100 text-orange-700",
+                  ];
+                  const color = rankColors[index] || "bg-gray-50 text-gray-600";
+                  return (
+                    <div
+                      key={item.item_id}
+                      className="border border-gray-100 rounded-xl p-4 shadow-sm bg-gradient-to-br from-white to-gray-50 flex flex-col gap-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${color}`}>
+                          {index + 1}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Revenue</p>
+                          <p className="text-lg font-semibold text-green-600">
+                            ${item.revenue.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Item</p>
+                        <p className="text-lg font-semibold text-gray-900">{item.name}</p>
+                      </div>
+                      <div className="flex items-center justify-between text-sm text-gray-600">
+                        <span className="flex items-center gap-2">
+                          <ShoppingBag className="w-4 h-4 text-pink-500" />
+                          Sold
+                        </span>
+                        <span className="font-semibold text-gray-800">{item.total_sold}</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-gray-500 text-center py-4">No sales data for this period</p>
