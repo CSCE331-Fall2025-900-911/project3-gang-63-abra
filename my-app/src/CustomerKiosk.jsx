@@ -566,7 +566,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                             ${Number(item.price || 0).toFixed(2)}
                           </p>
                           <span className="text-sm font-semibold text-pink-500">
-                            Tap to customize
+                            {t("Tap to customize")}
                           </span>
                         </div>
                       </CardContent>
