@@ -1266,12 +1266,28 @@ const ReportsTab = () => {
                 {Object.entries(reportData).map(([key, value]) => (
                   <div key={key} className="flex items-center justify-between py-2 border-b">
                     <span className="font-medium">{key.replace(/_/g, ' ').toUpperCase()}</span>
-                    <span className="text-gray-700">
-                      {typeof value === 'number' && !Number.isInteger(value)
-                        ? value.toFixed(2)
-                        : typeof value === 'object'
-                        ? JSON.stringify(value)
-                        : String(value)}
+                    <span className="text-gray-700 text-right">
+                      {key === 'top_items' && Array.isArray(value) ? (
+                        <div className="space-y-1 text-sm">
+                          {value.map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between gap-4"
+                            >
+                              <span className="font-medium">
+                                {idx + 1}. {item.name}
+                              </span>
+                              <span className="text-gray-500">
+                                {item.quantity_sold} sold · ${item.revenue.toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : typeof value === 'number' && !Number.isInteger(value) ? (
+                        value.toFixed(2)
+                      ) : (
+                        String(value)
+                      )}
                     </span>
                   </div>
                 ))}
