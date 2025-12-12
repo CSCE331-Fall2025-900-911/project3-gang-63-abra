@@ -5,6 +5,7 @@ import LoginPage from './loginPage.jsx';       // Import the login page
 import ManagerPage from './ManagerPage.jsx';   // Import the manager page
 import EmployeePanel from './EmployeePanel.jsx';
 import AccessibilityPanel from './AccessibilityPanel.jsx'; // Import accessibility panel
+import LanguageAccessibility from './LanguageAccessibility.jsx';
 import './App.css'; // This file will now hold styles for all components
 
 // Import the API_BASE configuration
@@ -111,6 +112,10 @@ function App() {
       setCurrentPage('login');
       return;
     }
+    if (page === 'language-accessibility' && !user?.email) {
+      setCurrentPage('login');
+      return;
+    }
     setCurrentPage(page);
   };
 
@@ -135,6 +140,7 @@ function App() {
           <>
             <button onClick={() => navigate('manager')}>{UI_STRINGS[language].managerPage}</button>
             <button onClick={() => navigate('employee')}>{UI_STRINGS[language].employeePanel}</button>
+            <button onClick={() => navigate('language-accessibility')}>Language & Accessibility</button>
           </>
         )}
       </div>
@@ -176,6 +182,10 @@ function App() {
         return isManager ? <ManagerPage /> : <LoginPage onLoginSuccess={handleLoginSuccess} language={language} />;
       case 'employee':
         return isManager ? <EmployeePanel /> : <LoginPage onLoginSuccess={handleLoginSuccess} language={language} />;
+      case 'language-accessibility':
+        return user?.email
+          ? <LanguageAccessibility language={language} />
+          : <LoginPage onLoginSuccess={handleLoginSuccess} language={language} />;
       default:
         return <CustomerKiosk user={user} language={language} />;
     }
