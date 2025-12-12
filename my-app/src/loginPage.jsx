@@ -1,33 +1,33 @@
 import React from 'react';
 
 const googleURL = import.meta.env.VITE_GOOGLE_URL;
-// Styles are now in App.css
 
-/**
- * This is the dedicated Login Page component.
- */
-function LoginPage({ onLoginSuccess }) {
-  /**
-   * This is your event handler function.
-   * It's called when the user clicks the button.
-   */
+const STRINGS = {
+  en: {
+    heading: "Sharetea POS Login",
+    prompt: "Please sign in to continue",
+    button: "Sign in with Google",
+  },
+  es: {
+    heading: "Inicio de sesión Sharetea POS",
+    prompt: "Por favor inicia sesión para continuar",
+    button: "Inicia sesión con Google",
+  },
+};
+
+function LoginPage({ onLoginSuccess, language = "en" }) {
+  const copy = STRINGS[language] || STRINGS.en;
+
   const handleGoogleLogin = () => {
-    // This URL MUST match the endpoint 
-    // The backend is running on port 8000.
     window.location.href = googleURL;
-    // In a real app, the backend would redirect back,
-    // and you'd call onLoginSuccess() after getting confirmation.
   };
 
   return (
-    // We use "login-container" from our App.css
     <div className="login-container">
-      <h1>Sharetea POS Login</h1>
-      <p>Please sign in to continue</p>
-      
-      {/* This is the Google login button */}
+      <h1>{copy.heading}</h1>
+      <p>{copy.prompt}</p>
       <button onClick={handleGoogleLogin} className="google-btn">
-        Sign in with Google
+        {copy.button}
       </button>
     </div>
   );
