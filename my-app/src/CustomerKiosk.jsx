@@ -35,6 +35,7 @@ const FALLBACK_ITEMS = [
   { id: "t2", name: "Crystal Jelly", price: 0.65, category: "Toppings", isTopping: true },
 ];
 
+const ALLOWED_CODES = new Set(LANGUAGES.map((l) => l.code));
 const Button = ({ children, className = "", ...props }) => (
   <button
     className={`bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-semibold transition ${className}`}
@@ -75,12 +76,13 @@ const getSavedLanguage = () => {
   if (cookie) {
     const value = cookie.split("=")[1]; // /en/es
     const parts = value.split("/");
-    if (parts[2]) return parts[2];
+    const lang = parts[2];
+    if (lang && ALLOWED_CODES.has(lang)) return lang;
   }
 
   try {
     const stored = localStorage.getItem("kioskLanguage");
-    if (stored) return stored;
+    if (stored && ALLOWED_CODES.has(stored)) return stored;
   } catch {
     // ignore storage errors
   }
@@ -111,6 +113,27 @@ const applyLanguageToGoogle = (lang) => {
 
   select.dispatchEvent(new Event("change"));
   return true;
+};
+
+const hideGoogleUI = () => {
+  if (document.getElementById("gt-style-block")) return;
+
+  const style = document.createElement("style");
+  style.id = "gt-style-block";
+  style.innerHTML = `
+    /* Hide Google banner, tooltip, and feedback overlays that block clicks */
+    .goog-te-banner-frame.skiptranslate,
+    .goog-te-balloon-frame,
+    .goog-tooltip,
+    .goog-text-highlight,
+    #goog-gt-tt,
+    .goog-te-spinner-pos,
+    .VIpgJd-ZVi9od-ORHb-OEVmcd {
+      display: none !important;
+    }
+    body { top: 0 !important; }
+  `;
+  document.head.appendChild(style);
 };
 
 export default function CustomerKiosk({ user }) {
@@ -212,6 +235,7 @@ export default function CustomerKiosk({ user }) {
     let poll;
     const savedLanguage = getSavedLanguage();
     setCurrentLanguage(savedLanguage);
+    hideGoogleUI();
 
     const startPollingForTranslator = () => {
       const check = () => {
@@ -246,6 +270,7 @@ export default function CustomerKiosk({ user }) {
           "google_translate_element"
         );
       }
+      setTranslatorReady(true);
       startPollingForTranslator();
     };
 
@@ -366,7 +391,16 @@ export default function CustomerKiosk({ user }) {
   const changeLanguage = (lang) => {
     setCurrentLanguage(lang);
     persistLanguage(lang);
-    applyLanguageToGoogle(lang);
+    const applied = applyLanguageToGoogle(lang);
+    if (!applied) {
+      let attempts = 5;
+      const retry = setInterval(() => {
+        if (applyLanguageToGoogle(lang) || attempts <= 0) {
+          clearInterval(retry);
+        }
+        attempts -= 1;
+      }, 300);
+    }
   };
 
   const goToRewards = () => {
