@@ -70,11 +70,8 @@ function App() {
         const data = await res.json();
         if (data && !data.error) {
           setUser(data);
-          if (ALLOWED_EMAILS.includes((data.email || "").toLowerCase())) {
-            handleLoginSuccess(data);
-          } else {
-            setCurrentPage('kiosk');
-          }
+          // Stay on login portal after reload; user can choose destination
+          setCurrentPage('login');
         }
       } catch {
         setUser(null);
@@ -181,14 +178,6 @@ function App() {
             <button className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600">
               {(weather.main.temp * 9/5 + 32).toFixed(1)}°F - {weather.weather[0].main}
             </button>
-          )}
-          {user?.email && (
-            <div className="account-section">
-              <span>{UI_STRINGS[language].signedInAs(user.email)}</span>
-              <button className="logout-btn" onClick={handleLogout}>
-                {UI_STRINGS[language].signOut}
-              </button>
-            </div>
           )}
         </nav>
       );
