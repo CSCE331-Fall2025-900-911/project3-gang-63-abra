@@ -398,7 +398,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
             <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-pink-500 shadow">
               Sharetea
               <span className="h-1 w-1 rounded-full bg-pink-400" />
-              Fresh Daily
+              {t("Fresh Daily")}
             </span>
             <div className="space-y-2">
               <h1 className="text-4xl md:text-5xl font-black text-slate-800">{t("Sharetea Kiosk")}</h1>
@@ -538,18 +538,22 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                       }}
                       className="relative h-full overflow-hidden border border-white/60 bg-white/80 shadow-lg backdrop-blur rounded-3xl transition duration-300 hover:-translate-y-2 hover:shadow-2xl cursor-pointer"
                     >
-                      <img
-                        src={getItemImage(item.name)}
-                        alt={item.name}
-                        className="w-full max-h-52 object-contain rounded-t-2xl bg-white/30 p-2"
-                      />
-                      <CardContent className="relative flex h-full flex-col gap-4 text-left select-text">
+                      <div className="h-52 flex items-center justify-center bg-white/30 rounded-t-2xl">
+                        <img
+                          src={getItemImage(item.name)}
+                          alt={item.name}
+                          className="max-h-full w-auto object-contain p-2"
+                        />
+                      </div>
+
+
+                      <CardContent className="relative z-10 flex flex-col gap-4 text-left select-text">
                         <div className="space-y-2">
                           <p className="text-[11px] tracking-[0.3em] text-pink-400 font-semibold">
-                            {item.category || "Drink"}
+                            {t(item.category || "Drink")}
                           </p>
                           <h3 className="text-2xl font-semibold text-slate-800" title={item.name}>
-                            {item.name}
+                            {t(item.name)}
                           </h3>
                           {item.description && (
                             <p className="text-sm text-slate-500 max-h-16 overflow-hidden">
@@ -574,7 +578,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
               <div className="sticky bottom-4 mt-10 flex justify-end">
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                   <Button onClick={() => setPhase("checkout")} className="shadow-lg">
-                    Checkout • {itemCount} • ${subtotal.toFixed(2)}
+                    {t("Checkout")} • {itemCount} • ${subtotal.toFixed(2)}
                   </Button>
                 </motion.div>
               </div>
@@ -617,22 +621,22 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                 {cart.map((item) => (
                   <div key={item.key} className="flex justify-between items-center py-3">
                     <div>
-                      <h3 className="font-semibold">{item.name}</h3>
+                      <h3 className="font-semibold">{t(item.name)}</h3>
                       <p className="text-gray-500">
-                        ${perItemTotal(item).toFixed(2)} each
+                        ${perItemTotal(item).toFixed(2)} {t("each")}
                       </p>
                       {item.toppings?.length > 0 && (
                         <p className="text-xs text-gray-400">
                           +{" "}
                           {item.toppings
                             .map((t) =>
-                              `${t.name} (${t.price ? `$${Number(t.price).toFixed(2)}` : "included"})`
+                              `${t(t.name)} (${t.price ? `$${Number(t.price).toFixed(2)}` : "included"})`
                             )
                             .join(", ")}
                         </p>
                       )}
                       <p className="text-xs text-gray-400">
-                        Ice: {item.iceLevel || "Regular Ice"} • Sugar: {item.sugarLevel || "100%"}
+                        {t("Ice:")} {t(item.iceLevel || "Regular Ice")} • {t("Sugar:")} {item.sugarLevel || "100%"}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -771,7 +775,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                 className="bg-gray-200 text-gray-700 hover:bg-gray-300"
                 onClick={() => setPhase("checkout")}
               >
-                Back to Checkout
+                {t("Back to Checkout")}
               </Button>
               <Button onClick={handleRedeemRewards} disabled={redeeming || !customerId}>
                 {redeeming ? "Applying..." : "Apply Discount"}
@@ -792,10 +796,10 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                 <div className="flex flex-col lg:flex-row gap-6">
                   <div className="flex-1 space-y-2">
                     <p className="text-xs uppercase tracking-[0.4em] text-pink-500 font-semibold">
-                      {selectedDrink.category || "Drink"}
+                      {t(selectedDrink.category || "Drink")}
                     </p>
                     <h2 className="text-3xl font-bold text-slate-900">
-                      {selectedDrink.name}
+                      {t(selectedDrink.name)}
                     </h2>
                     <p className="text-lg text-gray-500">
                       ${Number(selectedDrink.price || 0).toFixed(2)}
@@ -821,7 +825,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                   className="bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-none"
                   onClick={closeCustomizer}
                 >
-                  Back
+                  {t("Back")}
                 </Button>
                 <button
                   className="text-gray-400 hover:text-gray-600 p-2"
@@ -853,7 +857,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                         : "border-slate-200 bg-white hover:border-pink-200"
                     }`}
                   >
-                    {lvl}
+                    {t(lvl)}
                   </button>
                 ))}
               </div>
@@ -904,7 +908,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="font-semibold text-base">{topping.name}</p>
+                            <p className="font-semibold text-base">{t(topping.name)}</p>
                             <p className="text-sm text-gray-500">
                               {topping.price
                                 ? `+$${Number(topping.price).toFixed(2)}`
@@ -934,7 +938,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                           key={topping.id}
                           className="px-3 py-1 border border-pink-400 text-pink-600 text-xs font-semibold uppercase tracking-wide"
                         >
-                          {topping.name}
+                          {t(topping.name)}
                         </span>
                       ))}
                     </div>
