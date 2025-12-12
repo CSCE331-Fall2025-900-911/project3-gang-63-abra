@@ -20,11 +20,33 @@ const ALLOWED_EMAILS = [
   'zaheersufi@tamu.edu'
 ];
 
+const UI_STRINGS = {
+  en: {
+    loginPage: "Login Page",
+    customerKiosk: "Customer Kiosk",
+    managerPage: "Manager Page",
+    employeePanel: "Employee Panel",
+    signedInAs: (email) => `Signed in as ${email}`,
+    notSignedIn: "Not signed in",
+    signOut: "Sign out",
+  },
+  es: {
+    loginPage: "Página de inicio de sesión",
+    customerKiosk: "Kiosco de clientes",
+    managerPage: "Página del gerente",
+    employeePanel: "Panel de empleado",
+    signedInAs: (email) => `Conectado como ${email}`,
+    notSignedIn: "No has iniciado sesión",
+    signOut: "Cerrar sesión",
+  },
+};
+
 function App() {
   // This state will control which page is visible.
   const [currentPage, setCurrentPage] = useState('kiosk');
   const [user, setUser] = useState(null);
   const [weather, setWeather] = useState(null);
+  const [language, setLanguage] = useState('en');
 
   const isManager = useMemo(
     () => user?.email && ALLOWED_EMAILS.includes(user.email.toLowerCase()),
@@ -107,14 +129,28 @@ function App() {
   const Navigation = ({ weather }) => (
     <nav className="navigation-bar">
       <div className="nav-links">
-        <button onClick={() => navigate('login')}>Login Page</button>
-        <button onClick={() => navigate('kiosk')}>Customer Kiosk</button>
+        <button onClick={() => navigate('login')}>{UI_STRINGS[language].loginPage}</button>
+        <button onClick={() => navigate('kiosk')}>{UI_STRINGS[language].customerKiosk}</button>
         {isManager && (
           <>
-            <button onClick={() => navigate('manager')}>Manager Page</button>
-            <button onClick={() => navigate('employee')}>Employee Panel</button>
+            <button onClick={() => navigate('manager')}>{UI_STRINGS[language].managerPage}</button>
+            <button onClick={() => navigate('employee')}>{UI_STRINGS[language].employeePanel}</button>
           </>
         )}
+      </div>
+      <div className="nav-links" style={{ gap: '8px' }}>
+        <button
+          onClick={() => setLanguage('en')}
+          className={language === 'en' ? 'active' : ''}
+        >
+          English
+        </button>
+        <button
+          onClick={() => setLanguage('es')}
+          className={language === 'es' ? 'active' : ''}
+        >
+          Español
+        </button>
       </div>
       {weather && (
         <button className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600">
@@ -122,10 +158,12 @@ function App() {
         </button>
       )}
       <div className="account-section">
-        <span>{user?.email ? `Signed in as ${user.email}` : 'Not signed in'}</span>
+        <span>
+          {user?.email ? UI_STRINGS[language].signedInAs(user.email) : UI_STRINGS[language].notSignedIn}
+        </span>
         {user?.email && (
           <button className="logout-btn" onClick={handleLogout}>
-            Sign out
+            {UI_STRINGS[language].signOut}
           </button>
         )}
       </div>
@@ -137,15 +175,15 @@ function App() {
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'login':
-        return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+        return <LoginPage onLoginSuccess={handleLoginSuccess} language={language} />;
       case 'kiosk':
-        return <CustomerKiosk user={user} />;
+        return <CustomerKiosk user={user} language={language} />;
       case 'manager':
-        return isManager ? <ManagerPage /> : <LoginPage onLoginSuccess={handleLoginSuccess} />;
+        return isManager ? <ManagerPage /> : <LoginPage onLoginSuccess={handleLoginSuccess} language={language} />;
       case 'employee':
-        return isManager ? <EmployeePanel /> : <LoginPage onLoginSuccess={handleLoginSuccess} />;
+        return isManager ? <EmployeePanel /> : <LoginPage onLoginSuccess={handleLoginSuccess} language={language} />;
       default:
-        return <CustomerKiosk />;
+        return <CustomerKiosk user={user} language={language} />;
     }
   };
 
