@@ -140,16 +140,10 @@ function App() {
       </div>
       <div className="nav-links" style={{ gap: '8px' }}>
         <button
-          onClick={() => setLanguage('en')}
-          className={language === 'en' ? 'active' : ''}
+          onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+          className="active"
         >
-          English
-        </button>
-        <button
-          onClick={() => setLanguage('es')}
-          className={language === 'es' ? 'active' : ''}
-        >
-          Español
+          {language === 'en' ? 'Español' : 'English'}
         </button>
       </div>
       {weather && (

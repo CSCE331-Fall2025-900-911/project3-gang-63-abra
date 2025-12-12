@@ -11,11 +11,7 @@ import {
   redeemLoyaltyPoints,
   fetchWeather,
 } from "./api";
-
-const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "es", label: "Español" },
-];
+import { translate } from "./i18n";
 
 const FALLBACK_ITEMS = [
   { id: 1, name: "Classic Milk Tea", price: 4.5, category: "Milk Tea", isTopping: false },
@@ -26,7 +22,6 @@ const FALLBACK_ITEMS = [
   { id: "t2", name: "Crystal Jelly", price: 0.65, category: "Toppings", isTopping: true },
 ];
 
-const ALLOWED_CODES = new Set(LANGUAGES.map((l) => l.code));
 const Button = ({ children, className = "", ...props }) => (
   <button
     className={`bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-semibold transition ${className}`}
@@ -54,63 +49,7 @@ const getItemImage = (name) => {
   return itemImages[key] || fallbackImage;
 };
 
-const GOOGLE_TRANSLATE_SCRIPT_ID = "google-translate-script";
-const GOOGLE_COOKIE = "googtrans";
-
 const DEFAULT_LANG = "en";
-
-const getSavedLanguage = () => DEFAULT_LANG;
-
-const persistLanguage = (lang) => {
-  if (typeof document === "undefined") return;
-
-  const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
-  document.cookie = `${GOOGLE_COOKIE}=/en/${lang}; expires=${expires}; path=/`;
-
-  try {
-    localStorage.setItem("kioskLanguage", lang);
-  } catch {
-    // ignore storage errors
-  }
-};
-
-const applyLanguageToGoogle = (lang) => {
-  try {
-    const select = document.querySelector("select.goog-te-combo");
-    if (!select) return false;
-
-    if (select.value !== lang) {
-      select.value = lang;
-    }
-
-    select.dispatchEvent(new Event("change"));
-    return true;
-  } catch (err) {
-    console.warn("Failed to apply language", err);
-    return false;
-  }
-};
-
-const hideGoogleUI = () => {
-  if (document.getElementById("gt-style-block")) return;
-
-  const style = document.createElement("style");
-  style.id = "gt-style-block";
-  style.innerHTML = `
-    /* Hide Google banner, tooltip, and feedback overlays that block clicks */
-    .goog-te-banner-frame.skiptranslate,
-    .goog-te-balloon-frame,
-    .goog-tooltip,
-    .goog-text-highlight,
-    #goog-gt-tt,
-    .goog-te-spinner-pos,
-    .VIpgJd-ZVi9od-ORHb-OEVmcd {
-      display: none !important;
-    }
-    body { top: 0 !important; }
-  `;
-  document.head.appendChild(style);
-};
 
 export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
   const [items, setItems] = useState([]);
@@ -124,7 +63,6 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
   const [iceLevel, setIceLevel] = useState("Regular Ice");
   const [sugarLevel, setSugarLevel] = useState("100%");
 
-  const [translatorReady, setTranslatorReady] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState(DEFAULT_LANG);
 
   const [loyalty, setLoyalty] = useState(null);
@@ -137,6 +75,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
   const [redeemCount, setRedeemCount] = useState(1);
 
   const [weather, setWeather] = useState(null);
+  const t = (text) => translate(text, currentLanguage);
 
   const [category, setCategory] = useState("all");
 
@@ -154,7 +93,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
       } catch (e) {
         if (mounted) {
           setItems(FALLBACK_ITEMS);
-          setError("Unable to load live menu. Showing sample items.");
+          setError(t("Unable to load live menu. Showing sample items."));
         }
       } finally {
         if (mounted) setLoading(false);
@@ -164,7 +103,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     (async () => {
@@ -205,104 +144,8 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
   }, [customerId]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    let mounted = true;
-    let poll;
-    const savedLanguage = getSavedLanguage(); // always "en" to avoid auto-sticking to another language
-    setCurrentLanguage(DEFAULT_LANG);
-    persistLanguage(DEFAULT_LANG);
-    hideGoogleUI();
-
-    const swallowRemoveChildErrors = (event) => {
-      if (typeof event?.message === "string" && event.message.includes("removeChild")) {
-        event.preventDefault();
-        event.stopImmediatePropagation?.();
-        return true;
-      }
-      return false;
-    };
-
-    window.addEventListener("error", swallowRemoveChildErrors, true);
-    const swallowRejection = (event) => {
-      const msg = event?.reason?.message || event?.reason || "";
-      if (typeof msg === "string" && msg.includes("removeChild")) {
-        event.preventDefault();
-        event.stopImmediatePropagation?.();
-        return true;
-      }
-      return false;
-    };
-    window.addEventListener("unhandledrejection", swallowRejection, true);
-
-    const startPollingForTranslator = () => {
-      const check = () => {
-        const select = document.querySelector("select.goog-te-combo");
-        if (select) {
-          setTranslatorReady(true);
-          applyLanguageToGoogle(DEFAULT_LANG);
-          return true;
-        }
-        return false;
-      };
-
-      if (check()) return;
-
-      poll = window.setInterval(() => {
-        if (!mounted) return;
-        if (check()) {
-          clearInterval(poll);
-        }
-      }, 300);
-    };
-
-    window.googleTranslateElementInit = () => {
-      if (!mounted) return;
-      if (!window.__gtTranslator && window.google?.translate?.TranslateElement) {
-        window.__gtTranslator = new window.google.translate.TranslateElement(
-          {
-            pageLanguage: "en",
-            includedLanguages: LANGUAGES.map((l) => l.code).join(","),
-            autoDisplay: false,
-          },
-          "google_translate_element"
-        );
-      }
-      setTranslatorReady(true);
-      startPollingForTranslator();
-      applyLanguageToGoogle(DEFAULT_LANG);
-    };
-
-    if (window.google?.translate?.TranslateElement) {
-      window.googleTranslateElementInit();
-    } else {
-      const existingScript = document.getElementById(GOOGLE_TRANSLATE_SCRIPT_ID);
-      if (!existingScript) {
-        const script = document.createElement("script");
-        script.id = GOOGLE_TRANSLATE_SCRIPT_ID;
-        script.src =
-          "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-        script.async = true;
-        document.body.appendChild(script);
-      } else {
-        existingScript.addEventListener("load", window.googleTranslateElementInit, {
-          once: true,
-        });
-      }
-    }
-
-    return () => {
-      mounted = false;
-      if (poll) clearInterval(poll);
-      window.removeEventListener("error", swallowRemoveChildErrors, true);
-      window.removeEventListener("unhandledrejection", swallowRejection, true);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!translatorReady) return;
-    applyLanguageToGoogle(currentLanguage);
-  }, [translatorReady, currentLanguage]);
+    setCurrentLanguage(language || DEFAULT_LANG);
+  }, [language]);
 
 
   const drinks = useMemo(() => items.filter((it) => !it.isTopping), [items]);
@@ -391,16 +234,10 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
 
   const changeLanguage = (lang) => {
     setCurrentLanguage(lang);
-    persistLanguage(lang);
-    const applied = applyLanguageToGoogle(lang);
-    if (!applied) {
-      let attempts = 5;
-      const retry = setInterval(() => {
-        if (applyLanguageToGoogle(lang) || attempts <= 0) {
-          clearInterval(retry);
-        }
-        attempts -= 1;
-      }, 300);
+    try {
+      localStorage.setItem("kioskLanguage", lang);
+    } catch {
+      // ignore storage errors
     }
   };
 
@@ -530,10 +367,10 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-pink-50 to-yellow-50 p-6 text-center">
         <CheckCircle2 className="text-green-500 w-16 h-16 mb-4" />
-        <h1 className="text-3xl font-semibold">Order Confirmed</h1>
-        <p className="text-gray-600 mt-2">Thank you for ordering from Sharetea.</p>
+        <h1 className="text-3xl font-semibold">{t("Order Confirmed")}</h1>
+        <p className="text-gray-600 mt-2">{t("Thank you for ordering from Sharetea.")}</p>
         <Button className="mt-6" onClick={() => setPhase("browsing")}>
-          Back to Menu
+          {t("Back to Menu")}
         </Button>
       </div>
     );
@@ -541,22 +378,6 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-amber-50 relative">
-      {/* Translator container: visible to Google, invisible to users */}
-      <div
-        id="google_translate_element"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          opacity: 0,
-          pointerEvents: "none",
-          height: 0,
-          width: 0,
-          overflow: "hidden",
-        }}
-        aria-hidden="true"
-      />
-
       <div className="pointer-events-none absolute inset-0 z-0">
         <div className="pointer-events-none absolute -top-32 -right-16 w-80 h-80 bg-pink-200/40 blur-[120px]" />
         <div className="pointer-events-none absolute top-40 -left-10 w-72 h-72 bg-amber-200/40 blur-[120px]" />
@@ -580,45 +401,22 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
               Fresh Daily
             </span>
             <div className="space-y-2">
-              <h1 className="text-4xl md:text-5xl font-black text-slate-800">Sharetea Kiosk</h1>
+              <h1 className="text-4xl md:text-5xl font-black text-slate-800">{t("Sharetea Kiosk")}</h1>
               <p className="text-slate-500 text-lg">
-                Handcrafted milk teas, toppings on tap, and a smoother kiosk flow.
+                {t("Handcrafted milk teas, toppings on tap, and a smoother kiosk flow.")}
               </p>
             </div>
             {error && <p className="text-sm text-amber-600">{error}</p>}
           </div>
 
           <div className="flex flex-col gap-4 w-full md:w-auto md:items-end">
-            {/* Language card */}
-            <div className="rounded-3xl border border-white/60 bg-white/80 px-6 py-4 shadow-lg backdrop-blur">
-              <p className="text-xs uppercase tracking-widest text-slate-400">Language</p>
-              <p className="text-sm text-slate-500 mt-1">Translate the kiosk into your preferred language.</p>
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <div className="flex gap-2">
-                  {LANGUAGES.map((lang) => (
-                    <Button
-                      key={lang.code}
-                      className={`px-3 py-2 text-sm ${
-                        currentLanguage === lang.code
-                          ? ""
-                          : "bg-white text-pink-500 border border-pink-200 hover:bg-pink-50"
-                      }`}
-                      onClick={() => changeLanguage(lang.code)}
-                    >
-                      {lang.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
             {/* Rewards card */}
             <div className="rounded-3xl border border-white/60 bg-white/80 px-6 py-4 shadow-lg backdrop-blur w-full md:w-[320px]">
-              <p className="text-xs uppercase tracking-widest text-slate-400">Rewards</p>
+              <p className="text-xs uppercase tracking-widest text-slate-400">{t("Rewards")}</p>
               {user?.email ? (
                 <>
                   <p className="text-sm text-slate-500 mt-1">
-                    Earn points on every order and redeem for discounts.
+                    {t("Earn points on every order and redeem for discounts.")}
                   </p>
                   <div className="mt-3 flex items-center justify-between">
                     <div>
@@ -626,7 +424,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                         {loyaltyLoading ? "Loading…" : `${loyalty?.points_balance ?? 0} pts`}
                       </p>
                       <p className="text-xs text-slate-500">
-                        Rewards available: {loyaltyLoading ? "…" : loyalty?.rewards_available ?? 0}
+                        {t("Rewards available:")} {loyaltyLoading ? "…" : loyalty?.rewards_available ?? 0}
                       </p>
                     </div>
                     <Button
@@ -634,7 +432,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                       onClick={goToRewards}
                       disabled={!customerId || loyaltyLoading}
                     >
-                      Use Points
+                      {t("Use Points")}
                     </Button>
                   </div>
                   {loyalty?.points_to_next_reward > 0 && (
@@ -644,7 +442,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                   )}
                 </>
               ) : (
-                <p className="text-sm text-slate-500 mt-1">Sign in to collect and spend points.</p>
+                <p className="text-sm text-slate-500 mt-1">{t("Sign in to collect and spend points.")}</p>
               )}
               {loyaltyError && <p className="mt-2 text-xs text-amber-600">{loyaltyError}</p>}
             </div>
@@ -672,13 +470,13 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                     cart.length ? "text-white/80" : "text-slate-400"
                   }`}
                 >
-                  Cart Summary
+                  {t("Cart Summary")}
                 </p>
                 <p className={`text-lg font-bold ${cart.length ? "text-white" : "text-slate-800"}`}>
-                  {itemCount} item{itemCount === 1 ? "" : "s"}
+                  {itemCount} {t(itemCount === 1 ? "item" : "items")}
                 </p>
                 <p className={`text-sm ${cart.length ? "text-white/90" : "text-slate-500"}`}>
-                  ${subtotal.toFixed(2)} • Tap to review
+                  ${subtotal.toFixed(2)} • {t("Tap to review")}
                 </p>
               </div>
             </button>
@@ -689,7 +487,9 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
         {phase === "browsing" && (
           <>
             <div className="mb-8 flex flex-wrap items-center gap-3">
-              <p className="text-xs uppercase tracking-widest text-slate-400">Browse by category</p>
+              <p className="text-xs uppercase tracking-widest text-slate-400">
+                {t("Browse by category")}
+              </p>
               <div className="flex flex-wrap gap-3">
                 {categories.map((c) => (
                   <button
@@ -701,7 +501,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                         : "bg-white/80 text-slate-600 border-white/50 hover:border-pink-200"
                     }`}
                   >
-                    {c.label}
+                    {t(c.label)}
                   </button>
                 ))}
               </div>
@@ -805,8 +605,8 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-2xl font-semibold">Your Order</h2>
-                  <p className="text-gray-500">Review and confirm your items</p>
+                  <h2 className="text-2xl font-semibold">{t("Your Order")}</h2>
+                  <p className="text-gray-500">{t("Review and confirm your items")}</p>
                 </div>
                 <button className="text-gray-500" onClick={() => setPhase("browsing")}>
                   <X />
@@ -857,14 +657,16 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
               {cart.length > 0 && (
                 <div className="flex justify-between items-center mt-6 flex-col md:flex-row gap-4">
                   <div>
-                    <h3 className="text-lg font-bold">Subtotal: ${displaySubtotal}</h3>
+                    <h3 className="text-lg font-bold">
+                      {t("Subtotal")}: ${displaySubtotal}
+                    </h3>
                     {appliedDiscount > 0 && (
                       <p className="text-sm text-green-600">
                         Rewards discount: -${displayDiscount} ({rewardsUsed} used)
                       </p>
                     )}
-                    <p className="text-lg font-bold mt-1">Tax: ${displayTax}</p>
-                    <p className="text-2xl font-bold mt-1">Total due: ${displayTotalDue}</p>
+                    <p className="text-lg font-bold mt-1">{t("Tax")}: ${displayTax}</p>
+                    <p className="text-2xl font-bold mt-1">{t("Total due")}: ${displayTotalDue}</p>
                   </div>
 
                   <div className="flex gap-3 flex-wrap">
@@ -873,16 +675,16 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                       onClick={goToRewards}
                       disabled={!customerId}
                     >
-                      Use Rewards
+                      {t("Use Rewards")}
                     </Button>
                     <Button
                       className="bg-gray-400 hover:bg-gray-500"
                       onClick={() => setPhase("browsing")}
                     >
-                      Keep Browsing
+                      {t("Keep Browsing")}
                     </Button>
                     <Button onClick={handlePlaceOrder} disabled={placingOrder}>
-                      {placingOrder ? "Placing..." : "Place Order"}
+                      {placingOrder ? "Placing..." : t("Place Order")}
                     </Button>
                   </div>
                 </div>
@@ -900,7 +702,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
           >
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-2xl font-semibold">Use your points</h2>
+                <h2 className="text-2xl font-semibold">{t("Use your points")}</h2>
                 <p className="text-gray-500">Convert rewards to a discount for this order.</p>
               </div>
               <button className="text-gray-500" onClick={() => setPhase("checkout")}>
@@ -917,18 +719,18 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
             {customerId && (
               <div className="mt-4 space-y-3">
                 <p className="text-sm text-slate-700">
-                  Balance:{" "}
+                  {t("Balance:")}{" "}
                   <span className="font-semibold">
                     {loyalty?.points_balance ?? 0} pts
                   </span>{" "}
-                  • Rewards available:{" "}
+                  • {t("Rewards available:")}{" "}
                   <span className="font-semibold">
                     {loyalty?.rewards_available ?? 0}
                   </span>
                 </p>
                 <div className="flex items-center gap-3">
                   <label className="text-sm text-slate-700" htmlFor="reward-count">
-                    Rewards to use
+                    {t("Rewards to use")}
                   </label>
                   <input
                     id="reward-count"
@@ -946,7 +748,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                     }
                     disabled={!loyalty?.rewards_available}
                   >
-                    Use Max
+                    {t("Use Max")}
                   </Button>
                 </div>
                 <p className="text-sm text-slate-600">
@@ -1039,7 +841,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
 
             {/* Ice level */}
             <section className="space-y-3">
-              <p className="text-sm font-semibold text-gray-700">Ice Level</p>
+              <p className="text-sm font-semibold text-gray-700">{t("Ice Level")}</p>
               <div className="flex flex-wrap gap-3">
                 {["Extra Ice", "Regular Ice", "Less Ice", "No Ice", "Hot"].map((lvl) => (
                   <button
@@ -1059,7 +861,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
 
             {/* Sugar level */}
             <section className="space-y-3 mt-6">
-              <p className="text-sm font-semibold text-gray-700">Sugar Level</p>
+              <p className="text-sm font-semibold text-gray-700">{t("Sugar Level")}</p>
               <div className="flex flex-wrap gap-3">
                 {["0%", "25%", "50%", "75%", "100%", "120%"].map((lvl) => (
                   <button
@@ -1081,10 +883,9 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
             {toppings.length > 0 && (
               <section className="space-y-5">
                 <div className="flex flex-col gap-1">
-                  <p className="text-sm font-semibold text-gray-700">Add toppings</p>
+                  <p className="text-sm font-semibold text-gray-700">{t("Add toppings")}</p>
                   <p className="text-xs text-gray-400">
-                    Tap any topping to toggle it. Active toppings get a checkmark and appear
-                    below.
+                    {t("Tap any topping to toggle it. Active toppings get a checkmark and appear below.")}
                   </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1124,7 +925,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
 
                 <div className="pt-2">
                   <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                    Selected toppings
+                    {t("Selected toppings")}
                   </p>
                   {selectedToppings.length ? (
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -1138,7 +939,7 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                       ))}
                     </div>
                   ) : (
-                    <p className="mt-2 text-sm text-gray-400">No toppings selected yet.</p>
+                    <p className="mt-2 text-sm text-gray-400">{t("No toppings selected yet.")}</p>
                   )}
                 </div>
               </section>
@@ -1149,10 +950,10 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                 className="flex-1 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-none"
                 onClick={closeCustomizer}
               >
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button className="flex-1 rounded-none" onClick={addSelectionToCart}>
-                Add to Cart
+                {t("Add to Cart")}
               </Button>
             </div>
           </motion.div>
