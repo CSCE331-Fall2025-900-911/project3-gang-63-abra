@@ -66,7 +66,9 @@ const getItemImage = (name) => {
 const GOOGLE_TRANSLATE_SCRIPT_ID = "google-translate-script";
 const GOOGLE_COOKIE = "googtrans";
 
-const getSavedLanguage = () => "en";
+const DEFAULT_LANG = "en";
+
+const getSavedLanguage = () => DEFAULT_LANG;
 
 const persistLanguage = (lang) => {
   if (typeof document === "undefined") return;
@@ -132,7 +134,7 @@ export default function CustomerKiosk({ user }) {
   const [sugarLevel, setSugarLevel] = useState("100%");
 
   const [translatorReady, setTranslatorReady] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState("en");
+  const [currentLanguage, setCurrentLanguage] = useState(DEFAULT_LANG);
 
   const [loyalty, setLoyalty] = useState(null);
   const [loyaltyLoading, setLoyaltyLoading] = useState(false);
@@ -217,8 +219,8 @@ export default function CustomerKiosk({ user }) {
     let mounted = true;
     let poll;
     const savedLanguage = getSavedLanguage(); // always "en" to avoid auto-sticking to another language
-    setCurrentLanguage(savedLanguage);
-    persistLanguage(savedLanguage);
+    setCurrentLanguage(DEFAULT_LANG);
+    persistLanguage(DEFAULT_LANG);
     hideGoogleUI();
 
     const swallowRemoveChildErrors = (event) => {
@@ -231,13 +233,23 @@ export default function CustomerKiosk({ user }) {
     };
 
     window.addEventListener("error", swallowRemoveChildErrors, true);
+    const swallowRejection = (event) => {
+      const msg = event?.reason?.message || event?.reason || "";
+      if (typeof msg === "string" && msg.includes("removeChild")) {
+        event.preventDefault();
+        event.stopImmediatePropagation?.();
+        return true;
+      }
+      return false;
+    };
+    window.addEventListener("unhandledrejection", swallowRejection, true);
 
     const startPollingForTranslator = () => {
       const check = () => {
         const select = document.querySelector("select.goog-te-combo");
         if (select) {
           setTranslatorReady(true);
-          applyLanguageToGoogle(savedLanguage);
+          applyLanguageToGoogle(DEFAULT_LANG);
           return true;
         }
         return false;
@@ -267,6 +279,7 @@ export default function CustomerKiosk({ user }) {
       }
       setTranslatorReady(true);
       startPollingForTranslator();
+      applyLanguageToGoogle(DEFAULT_LANG);
     };
 
     if (window.google?.translate?.TranslateElement) {
@@ -291,6 +304,7 @@ export default function CustomerKiosk({ user }) {
       mounted = false;
       if (poll) clearInterval(poll);
       window.removeEventListener("error", swallowRemoveChildErrors, true);
+      window.removeEventListener("unhandledrejection", swallowRejection, true);
     };
   }, []);
 
