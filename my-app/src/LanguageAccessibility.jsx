@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from "react";
 
-const SUPPORTED_LANGUAGES = ["English", "Español"];
+const SUPPORTED_LANGUAGES = [
+  "English",
+  "Español",
+  "Français",
+  "Deutsch",
+  "日本語",
+  "한국어",
+  "繁體中文",
+  "العربية",
+];
 
 const copy = {
   en: {
@@ -18,7 +27,7 @@ const copy = {
     optionalTitle: "Optional Translation Tool (Employee Reference Only)",
     optionalBody:
       "Google Translate is available here for ad-hoc reference only. Automated translations may not reflect official menu names or prices—always rely on the controlled kiosk strings when assisting customers.",
-    widgetNote: "Translation widget (isolated to this page only)",
+    widgetNote: "Translation widget",
   },
   es: {
     title: "Idiomas y Accesibilidad",
@@ -53,7 +62,7 @@ export default function LanguageAccessibility({ language = "en" }) {
         new window.google.translate.TranslateElement(
           {
             pageLanguage: "en",
-            includedLanguages: "en,es",
+            includedLanguages: "en,es,fr,de,ja,ko,zh-TW,ar",
             autoDisplay: false,
           },
           "gt-widget"
