@@ -629,8 +629,8 @@ export default function CustomerKiosk({ user, language = DEFAULT_LANG }) {
                         <p className="text-xs text-gray-400">
                           +{" "}
                           {item.toppings
-                            .map((t) =>
-                              `${t(t.name)} (${t.price ? `$${Number(t.price).toFixed(2)}` : "included"})`
+                            .map((top) =>
+                              `${t(top.name)} (${top.price ? `$${Number(top.price).toFixed(2)}` : "included"})`
                             )
                             .join(", ")}
                         </p>
