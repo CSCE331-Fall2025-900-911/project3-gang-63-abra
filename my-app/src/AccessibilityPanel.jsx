@@ -174,9 +174,6 @@ function AccessibilityPanel() {
             <p className="info-text">
               This website is designed to be accessible to all users. These tools help optimize your experience.
             </p>
-            <p className="wcag-note">
-              WCAG 2.1 Level AA Compliant
-            </p>
           </div>
         </div>
       )}

@@ -229,45 +229,40 @@ const OrderTrendsTab = () => {
               Top Selling Items
             </h3>
             {trends.top_items.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {trends.top_items.map((item, index) => {
-                  const rankColors = [
-                    "bg-yellow-100 text-yellow-700",
-                    "bg-gray-100 text-gray-700",
-                    "bg-orange-100 text-orange-700",
-                  ];
-                  const color = rankColors[index] || "bg-gray-50 text-gray-600";
-                  return (
-                    <div
-                      key={item.item_id}
-                      className="border border-gray-100 rounded-xl p-4 shadow-sm bg-gradient-to-br from-white to-gray-50 flex flex-col gap-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${color}`}>
-                          {index + 1}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500">Revenue</p>
-                          <p className="text-lg font-semibold text-green-600">
-                            ${item.revenue.toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
+              <ul className="space-y-3">
+                {trends.top_items.map((item, index) => (
+                  <li
+                    key={item.item_id}
+                    className="flex items-center justify-between border border-gray-100 rounded-lg p-3 bg-white shadow-sm hover:border-pink-100 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                          index === 0
+                            ? "bg-yellow-100 text-yellow-700"
+                            : index === 1
+                            ? "bg-gray-100 text-gray-700"
+                            : index === 2
+                            ? "bg-orange-100 text-orange-700"
+                            : "bg-gray-50 text-gray-600"
+                        }`}
+                      >
+                        {index + 1}
+                      </span>
                       <div>
-                        <p className="text-sm text-gray-500">Item</p>
-                        <p className="text-lg font-semibold text-gray-900">{item.name}</p>
-                      </div>
-                      <div className="flex items-center justify-between text-sm text-gray-600">
-                        <span className="flex items-center gap-2">
-                          <ShoppingBag className="w-4 h-4 text-pink-500" />
-                          Sold
-                        </span>
-                        <span className="font-semibold text-gray-800">{item.total_sold}</span>
+                        <p className="font-semibold text-gray-900">{item.name}</p>
+                        <p className="text-xs text-gray-500">Sold: {item.total_sold}</p>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">Revenue</p>
+                      <p className="text-base font-semibold text-green-600">
+                        ${item.revenue.toFixed(2)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             ) : (
               <p className="text-gray-500 text-center py-4">No sales data for this period</p>
             )}
