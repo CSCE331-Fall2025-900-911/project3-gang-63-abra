@@ -109,6 +109,16 @@ const drinkAndToppingNames = {
     fr: "Golden Retriever",
     de: "Golden Retriever",
   },
+  "New Item": {
+    es: "Nuevo Artículo",
+    fr: "Golden Retriever",
+    de: "Golden Retriever",
+  },
+  "seasonal drink": {
+    es: "Bebida de Temporada",
+    fr: "Golden Retriever",
+    de: "Golden Retriever",
+  },
   "Classic Pearl Milk Tea": {
     es: "Té Clásico con Perlas",
     fr: "Thé au lait perlé classique",
