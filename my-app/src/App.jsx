@@ -96,25 +96,16 @@ function App() {
     loadWeather();
   }, []);
 
-  // This function will be passed to the LoginPage
-  // so it can tell the App to switch views after a successful login.
+  // Keep user on login portal after auth; navigation choices happen from there.
   const handleLoginSuccess = (userData = user) => {
-    const nextUser = userData || user;
-    setUser(nextUser);
-    if (nextUser?.email && ALLOWED_EMAILS.includes(nextUser.email.toLowerCase())) {
-      setCurrentPage('employee');
-    } else {
-      setCurrentPage('kiosk');
-    }
+    setUser(userData || user);
+    setCurrentPage('login');
   };
 
-  // This function lets us switch back to the login page (or any other page)
+  // Only allow navigation away from login while on the login portal
   const navigate = (page) => {
-    if ((page === 'manager' || page === 'employee') && !isManager) {
-      setCurrentPage('login');
-      return;
-    }
-    if (page === 'language-accessibility' && !user?.email) {
+    if (currentPage !== 'login' && page !== 'login') return;
+    if ((page === 'manager' || page === 'employee' || page === 'language-accessibility') && !isManager) {
       setCurrentPage('login');
       return;
     }
@@ -132,46 +123,91 @@ function App() {
     }
   };
 
-  // Simple navigation bar to switch between views (for testing)
-  const Navigation = ({ weather }) => (
-    <nav className="navigation-bar">
-      <div className="nav-links">
-        <button onClick={() => navigate('login')}>{UI_STRINGS[language].loginPage}</button>
-        <button onClick={() => navigate('kiosk')}>{UI_STRINGS[language].customerKiosk}</button>
-        {isManager && (
-          <>
-            <button onClick={() => navigate('manager')}>{UI_STRINGS[language].managerPage}</button>
-            <button onClick={() => navigate('employee')}>{UI_STRINGS[language].employeePanel}</button>
-            <button onClick={() => navigate('language-accessibility')}>{UI_STRINGS[language].languageAndAccessibility}</button>
-          </>
-        )}
-      </div>
-      <div className="nav-links" style={{ gap: '8px' }}>
-        <button
-          onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-          className="active"
-        >
-          {language === 'en' ? 'Español' : 'English'}
-        </button>
-      </div>
-      {weather && (
-        <button className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600">
-          {(weather.main.temp * 9/5 + 32).toFixed(1)}°F - {weather.weather[0].main}
-        </button>
-      )}
-      <div className="account-section">
-        <span>
-          {user?.email ? UI_STRINGS[language].signedInAs(user.email) : UI_STRINGS[language].notSignedIn}
-        </span>
-        {user?.email && (
-          <button className="logout-btn" onClick={handleLogout}>
-            {UI_STRINGS[language].signOut}
+  const Navigation = ({ weather }) => {
+    const langToggle = (
+      <button
+        onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+        className="active"
+      >
+        {language === 'en' ? 'Español' : 'English'}
+      </button>
+    );
+
+    // Full portal nav on login page
+    if (currentPage === 'login') {
+      return (
+        <nav className="navigation-bar">
+          <div className="nav-links">
+            <button onClick={() => navigate('login')}>{UI_STRINGS[language].loginPage}</button>
+            <button onClick={() => navigate('kiosk')}>{UI_STRINGS[language].customerKiosk}</button>
+            {isManager && (
+              <>
+                <button onClick={() => navigate('manager')}>{UI_STRINGS[language].managerPage}</button>
+                <button onClick={() => navigate('employee')}>{UI_STRINGS[language].employeePanel}</button>
+                <button onClick={() => navigate('language-accessibility')}>{UI_STRINGS[language].languageAndAccessibility}</button>
+              </>
+            )}
+          </div>
+          <div className="nav-links" style={{ gap: '8px' }}>
+            {langToggle}
+          </div>
+          {weather && (
+            <button className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600">
+              {(weather.main.temp * 9/5 + 32).toFixed(1)}°F - {weather.weather[0].main}
+            </button>
+          )}
+          <div className="account-section">
+            <span>
+              {user?.email ? UI_STRINGS[language].signedInAs(user.email) : UI_STRINGS[language].notSignedIn}
+            </span>
+            {user?.email && (
+              <button className="logout-btn" onClick={handleLogout}>
+                {UI_STRINGS[language].signOut}
+              </button>
+            )}
+          </div>
+        </nav>
+      );
+    }
+
+    // Kiosk: only language + weather
+    if (currentPage === 'kiosk') {
+      return (
+        <nav className="navigation-bar">
+          <div className="nav-links" style={{ gap: '8px' }}>
+            {langToggle}
+          </div>
+          {weather && (
+            <button className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600">
+              {(weather.main.temp * 9/5 + 32).toFixed(1)}°F - {weather.weather[0].main}
+            </button>
+          )}
+        </nav>
+      );
+    }
+
+    // Manager/Employee/Language-accessibility: minimal nav with language toggle, weather, and logout
+    return (
+      <nav className="navigation-bar">
+        <div className="nav-links" style={{ gap: '8px' }}>
+          {langToggle}
+        </div>
+        {weather && (
+          <button className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600">
+            {(weather.main.temp * 9/5 + 32).toFixed(1)}°F - {weather.weather[0].main}
           </button>
         )}
-      </div>
-      {/* You can add more buttons here as you build the Manager/Cashier views */}
-    </nav>
-  );
+        {user?.email && (
+          <div className="account-section">
+            <span>{UI_STRINGS[language].signedInAs(user.email)}</span>
+            <button className="logout-btn" onClick={handleLogout}>
+              {UI_STRINGS[language].signOut}
+            </button>
+          </div>
+        )}
+      </nav>
+    );
+  };
 
   // This function decides which component to show
   const renderCurrentPage = () => {
