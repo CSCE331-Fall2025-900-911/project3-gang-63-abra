@@ -196,7 +196,29 @@ export default function CustomerKiosk({ user }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    ensureGoogleTranslate();
+    if (window.__gtInitialized) return;
+    window.__gtInitialized = true;
+
+    window.googleTranslateElementInit = () => {
+      new window.google.translate.TranslateElement(
+        {
+          pageLanguage: "en",
+          includedLanguages: LANGUAGES.map(l => l.code).join(","),
+          autoDisplay: false,
+        },
+        "google_translate_element"
+      );
+    };
+
+    const scriptId = "google-translate-script";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src =
+        "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+      script.async = true;
+      document.body.appendChild(script);
+    }
 
     const interval = setInterval(() => {
       const select = document.querySelector("select.goog-te-combo");
@@ -204,10 +226,11 @@ export default function CustomerKiosk({ user }) {
         setTranslatorReady(true);
         clearInterval(interval);
       }
-    }, 400);
+    }, 300);
 
     return () => clearInterval(interval);
   }, []);
+
 
   const drinks = useMemo(() => items.filter((it) => !it.isTopping), [items]);
   const toppings = useMemo(() => items.filter((it) => it.isTopping), [items]);
