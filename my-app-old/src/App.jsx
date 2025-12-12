@@ -150,7 +150,7 @@ export default function ShareTeaKiosk() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-pink-50 to-yellow-50 p-6 text-center">
         <CheckCircle2 className="text-green-500 w-16 h-16 mb-4" />
         <h1 className="text-3xl font-semibold">Order Confirmed</h1>
-        <p className="text-gray-600 mt-2">Thank you for ordering from Share Tea.</p>
+        <p className="text-gray-600 mt-2">Thank you for ordering from Sharetea.</p>
         <Button className="mt-6" onClick={() => setPhase("browsing")}>
           Back to Menu
         </Button>
@@ -182,7 +182,7 @@ export default function ShareTeaKiosk() {
               Fresh Daily
             </span>
             <div className="space-y-2">
-              <h1 className="text-4xl md:text-5xl font-black text-slate-800">Share Tea Kiosk</h1>
+              <h1 className="text-4xl md:text-5xl font-black text-slate-800">Sharetea Kiosk</h1>
               <p className="text-slate-500 text-lg">Handcrafted milk teas, toppings on tap, and a smoother kiosk flow.</p>
             </div>
             {error && <p className="text-sm text-amber-600">{error}</p>}

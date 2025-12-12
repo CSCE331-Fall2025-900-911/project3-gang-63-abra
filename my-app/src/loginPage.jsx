@@ -22,7 +22,7 @@ function LoginPage({ onLoginSuccess }) {
   return (
     // We use "login-container" from our App.css
     <div className="login-container">
-      <h1>Share Tea POS Login</h1>
+      <h1>Sharetea POS Login</h1>
       <p>Please sign in to continue</p>
       
       {/* This is the Google login button */}

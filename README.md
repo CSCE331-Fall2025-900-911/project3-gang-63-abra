@@ -1,4 +1,4 @@
-# Share Tea Ordering Kiosk
+# Sharetea Ordering Kiosk
 
 A React kiosk interface backed by a lightweight Flask API that serves menu data from the CSCE 315 Postgres instance.
 

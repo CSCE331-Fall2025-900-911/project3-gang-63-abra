@@ -1,17 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ShoppingCart, CheckCircle2, Check, Minus, Plus, X } from "lucide-react";
-
 import { motion } from "framer-motion";
+
 import { itemImages, fallbackImage } from "./assets/images";
-
-const getItemImage = (name) => {
-  if (!name) return fallbackImage;
-  const key = name.toLowerCase().replace(/\s+/g, " ");
-  return itemImages[key] || fallbackImage;
-};
-import {submitOrder} from "./api";
-
-import { fetchMenu, fetchLoyaltyAccount, earnLoyaltyPoints, redeemLoyaltyPoints, fetchWeather } from "./api";
+import {
+  submitOrder,
+  fetchMenu,
+  fetchLoyaltyAccount,
+  earnLoyaltyPoints,
+  redeemLoyaltyPoints,
+  fetchWeather,
+} from "./api";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -25,6 +24,15 @@ const LANGUAGES = [
   { code: "vi", label: "Tiếng Việt" },
   { code: "hi", label: "हिन्दी" },
   { code: "ar", label: "العربية" },
+];
+
+const FALLBACK_ITEMS = [
+  { id: 1, name: "Classic Milk Tea", price: 4.5, category: "Milk Tea", isTopping: false },
+  { id: 2, name: "Taro Milk Tea", price: 5.0, category: "Milk Tea", isTopping: false },
+  { id: 3, name: "Brown Sugar Boba", price: 5.5, category: "Specialty", isTopping: false },
+  { id: 4, name: "Matcha Latte", price: 5.25, category: "Latte", isTopping: false },
+  { id: "t1", name: "Honey Boba", price: 0.75, category: "Toppings", isTopping: true },
+  { id: "t2", name: "Crystal Jelly", price: 0.65, category: "Toppings", isTopping: true },
 ];
 
 const Button = ({ children, className = "", ...props }) => (
@@ -48,33 +56,66 @@ const CardContent = ({ children, className = "", ...props }) => (
   </div>
 );
 
-const FALLBACK_ITEMS = [
-  { id: 1, name: "Classic Milk Tea", price: 4.5, category: "Milk Tea", isTopping: false },
-  { id: 2, name: "Taro Milk Tea", price: 5.0, category: "Milk Tea", isTopping: false },
-  { id: 3, name: "Brown Sugar Boba", price: 5.5, category: "Specialty", isTopping: false },
-  { id: 4, name: "Matcha Latte", price: 5.25, category: "Latte", isTopping: false },
-  { id: "t1", name: "Honey Boba", price: 0.75, category: "Toppings", isTopping: true },
-  { id: "t2", name: "Crystal Jelly", price: 0.65, category: "Toppings", isTopping: true },
-  /*Potential added options for toppings
-  { id: "t3", name: "Strawberry Jelly", price: 0.65, category: "Toppings", isTopping: true },
-  { id: "t4", name: "Popping Boba", price: 0.85, category: "Toppings", isTopping: true },
-  { id: "t5", name: "Regular Boba", price: 0.5, category: "Toppings", isTopping: true },
-  */  
-];
+const getItemImage = (name) => {
+  if (!name) return fallbackImage;
+  const key = name.toLowerCase().replace(/\s+/g, " ");
+  return itemImages[key] || fallbackImage;
+};
+
+const ensureGoogleTranslate = () => {
+  if (typeof window === "undefined") return;
+
+  if (!window.__gt_initialized) {
+    window.__gt_initialized = false;
+  }
+
+  const initialize = () => {
+    if (window.__gt_initialized) return;
+    if (!window.google || !window.google.translate || !window.google.translate.TranslateElement) return;
+
+    new window.google.translate.TranslateElement(
+      {
+        pageLanguage: "en",
+        includedLanguages: LANGUAGES.map((l) => l.code).join(","),
+        autoDisplay: false,
+      },
+      "google_translate_element"
+    );
+
+    window.__gt_initialized = true;
+  };
+
+  if (window.google && window.google.translate && window.google.translate.TranslateElement) {
+    initialize();
+    return;
+  }
+
+  window.googleTranslateElementInit = initialize;
+
+  if (!document.getElementById("google-translate-script")) {
+    const script = document.createElement("script");
+    script.id = "google-translate-script";
+    script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+    script.async = true;
+    document.body.appendChild(script);
+  }
+};
 
 export default function CustomerKiosk({ user }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [cart, setCart] = useState([]);
   const [phase, setPhase] = useState("browsing");
   const [selectedDrink, setSelectedDrink] = useState(null);
   const [selectedToppings, setSelectedToppings] = useState([]);
   const [iceLevel, setIceLevel] = useState("Regular Ice");
   const [sugarLevel, setSugarLevel] = useState("100%");
+
   const [translatorReady, setTranslatorReady] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
-  const languages = LANGUAGES;
+
   const [loyalty, setLoyalty] = useState(null);
   const [loyaltyLoading, setLoyaltyLoading] = useState(false);
   const [loyaltyError, setLoyaltyError] = useState("");
@@ -83,15 +124,22 @@ export default function CustomerKiosk({ user }) {
   const [redeeming, setRedeeming] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [redeemCount, setRedeemCount] = useState(1);
+
   const [weather, setWeather] = useState(null);
+
+  const [category, setCategory] = useState("all");
+
+  const customerId = (user?.email || "").toLowerCase();
 
   useEffect(() => {
     let mounted = true;
+
     (async () => {
       try {
         const data = await fetchMenu();
-        console.log("Fetched items:", data); 
-        if (mounted) setItems(data);
+        if (mounted) {
+          setItems(Array.isArray(data) ? data : FALLBACK_ITEMS);
+        }
       } catch (e) {
         if (mounted) {
           setItems(FALLBACK_ITEMS);
@@ -101,86 +149,22 @@ export default function CustomerKiosk({ user }) {
         if (mounted) setLoading(false);
       }
     })();
+
     return () => {
       mounted = false;
     };
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    window.__googleTranslateInitialized = false;
-
-    const scriptId = "google-translate-script";
-    const elementId = "google_translate_element";
-
-    const ensureSelectReady = () => {
-      const select = document.querySelector("select.goog-te-combo");
-      if (select) {
-        setTranslatorReady(true);
-        return true;
+    (async () => {
+      try {
+        const data = await fetchWeather("College Station");
+        setWeather(data);
+      } catch (err) {
+        console.error("Weather fetch failed:", err);
       }
-      return false;
-    };
-
-    const initTranslateElement = () => {
-    if (!window.google || !window.google.translate) return;
-
-    const oldWrapper = document.querySelector(".goog-te-gadget");
-    const oldFrame = document.querySelector("iframe.goog-te-banner-frame");
-    const oldMenuFrame = document.querySelector("iframe.goog-te-menu-frame");
-
-    if (oldWrapper) oldWrapper.remove();
-    if (oldFrame) oldFrame.remove();
-    if (oldMenuFrame) oldMenuFrame.remove();
-
-    window.googleTranslateElementInit = null;
-    window.__googleTranslateInitialized = false;
-
-    new window.google.translate.TranslateElement(
-      {
-        pageLanguage: "en",
-        includedLanguages: languages.map((l) => l.code).join(","),
-        autoDisplay: false,
-      },
-      "google_translate_element"
-    );
-
-    window.__googleTranslateInitialized = true;
-  };
-
-
-    window.googleTranslateElementInit = initTranslateElement;
-
-    if (window.google && window.google.translate) {
-      initTranslateElement();
-    } else if (!document.getElementById(scriptId)) {
-      const script = document.createElement("script");
-      script.id = scriptId;
-      script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-      script.async = true;
-      document.body.appendChild(script);
-    }
-
-    const interval = setInterval(() => {
-      if (ensureSelectReady()) clearInterval(interval);
-    }, 500);
-
-    return () => clearInterval(interval);
+    })();
   }, []);
-
-  useEffect(() => {
-  (async () => {
-    try {
-      const data = await fetchWeather("College Station");
-      setWeather(data);
-    } catch (err) {
-      console.error("Weather fetch failed:", err);
-    }
-  })();
-}, [languages]);
-
-  const customerId = (user?.email || "").toLowerCase();
 
   useEffect(() => {
     if (!customerId) {
@@ -209,6 +193,21 @@ export default function CustomerKiosk({ user }) {
     loadLoyalty();
   }, [customerId]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    ensureGoogleTranslate();
+
+    const interval = setInterval(() => {
+      const select = document.querySelector("select.goog-te-combo");
+      if (select) {
+        setTranslatorReady(true);
+        clearInterval(interval);
+      }
+    }, 400);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const drinks = useMemo(() => items.filter((it) => !it.isTopping), [items]);
   const toppings = useMemo(() => items.filter((it) => it.isTopping), [items]);
@@ -220,11 +219,8 @@ export default function CustomerKiosk({ user }) {
     { label: "Seasonal", value: "seasonal" },
   ];
 
-  const [category, setCategory] = useState("all"); // lowercase
-
   const filtered = useMemo(() => {
     if (category === "all") return drinks;
-    console.log("Filtering drinks for category:", category);
     return drinks.filter((item) => (item.category || "").toLowerCase() === category);
   }, [drinks, category]);
 
@@ -260,17 +256,24 @@ export default function CustomerKiosk({ user }) {
   };
 
   const updateQty = (key, delta) => {
-    setCart((prev) => prev.map((x) => (x.key === key ? { ...x, qty: x.qty + delta } : x)).filter((x) => x.qty > 0));
+    setCart((prev) =>
+      prev
+        .map((x) => (x.key === key ? { ...x, qty: x.qty + delta } : x))
+        .filter((x) => x.qty > 0)
+    );
   };
 
   const perItemTotal = (item) => {
-    const toppingTotal = (item.toppings || []).reduce((sum, topping) => sum + (Number(topping.price) || 0), 0);
+    const toppingTotal = (item.toppings || []).reduce(
+      (sum, topping) => sum + (Number(topping.price) || 0),
+      0
+    );
     return (Number(item.price) || 0) + toppingTotal;
   };
 
-  const total = cart.reduce((sum, item) => sum + perItemTotal(item) * item.qty, 0);
+  const subtotal = cart.reduce((sum, item) => sum + perItemTotal(item) * item.qty, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.qty, 0);
-  const totalWithDiscount = Math.max(total - appliedDiscount, 0);
+  const subtotalWithDiscount = Math.max(subtotal - appliedDiscount, 0);
 
   const resetDiscounts = () => {
     setAppliedDiscount(0);
@@ -291,11 +294,16 @@ export default function CustomerKiosk({ user }) {
   };
 
   const changeLanguage = (lang) => {
+    setCurrentLanguage(lang);
+
     const select = document.querySelector("select.goog-te-combo");
     if (!select) return;
+
     select.value = lang;
-    select.dispatchEvent(new Event("change"));
-    setCurrentLanguage(lang);
+
+    const event = document.createEvent("HTMLEvents");
+    event.initEvent("change", true, true);
+    select.dispatchEvent(event);
   };
 
   const goToRewards = () => {
@@ -320,16 +328,17 @@ export default function CustomerKiosk({ user }) {
       setLoyaltyError("No rewards available to redeem yet.");
       return;
     }
-    if (total <= 0) {
+    if (subtotal <= 0) {
       setLoyaltyError("Add items to your cart first.");
       return;
     }
-    const blocksToUse = Math.min(Math.max(1, redeemCount || 1), available);
 
+    const blocksToUse = Math.min(Math.max(1, redeemCount || 1), available);
     setRedeeming(true);
     setLoyaltyError("");
+
     try {
-      const res = await redeemLoyaltyPoints(customerId, blocksToUse, total, "Kiosk redemption");
+      const res = await redeemLoyaltyPoints(customerId, blocksToUse, subtotal, "Kiosk redemption");
       setAppliedDiscount(res.discount_amount || 0);
       setRewardsUsed(res.rewards_used || blocksToUse);
       await refreshLoyalty();
@@ -341,20 +350,41 @@ export default function CustomerKiosk({ user }) {
     }
   };
 
-  const placeOrder = async () => {
+  const placeOrderAndLoyalty = async (totalDue) => {
     if (!cart.length) return;
     setPlacingOrder(true);
+
     try {
+      const flattenedItems = cart.flatMap((item) => {
+        const drinkItem = { item_id: item.id, quantity: item.qty };
+        const toppingItems =
+          item.toppings?.map((t) => ({
+            item_id: t.id,
+            quantity: t.qty ?? 1,
+          })) || [];
+        return [drinkItem, ...toppingItems];
+      });
+
+      const orderPayload = {
+        employee_id: 16,
+        items: flattenedItems,
+      };
+
+      console.log("Submitting order payload:", orderPayload);
+      await submitOrder(orderPayload);
+
       if (customerId) {
-        const res = await earnLoyaltyPoints(customerId, total, "Kiosk order");
+        const res = await earnLoyaltyPoints(customerId, totalDue, "Kiosk order");
         setLoyalty(res.account || loyalty);
         await refreshLoyalty();
       }
+
       setCart([]);
       resetDiscounts();
       setPhase("confirmed");
-    } catch (e) {
-      setError("Order placed locally, but we could not update points.");
+    } catch (err) {
+      console.error("ORDER ERROR:", err);
+      setError("Order failed or loyalty points failed.");
       setPhase("confirmed");
     } finally {
       setPlacingOrder(false);
@@ -387,11 +417,7 @@ export default function CustomerKiosk({ user }) {
 
   const addSelectionToCart = () => {
     if (!selectedDrink) return;
-    addToCart(
-      { ...selectedDrink, iceLevel, sugarLevel },
-      selectedToppings
-    );
-
+    addToCart({ ...selectedDrink, iceLevel, sugarLevel }, selectedToppings);
     closeCustomizer();
   };
 
@@ -400,7 +426,7 @@ export default function CustomerKiosk({ user }) {
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-pink-50 to-yellow-50 p-6 text-center">
         <CheckCircle2 className="text-green-500 w-16 h-16 mb-4" />
         <h1 className="text-3xl font-semibold">Order Confirmed</h1>
-        <p className="text-gray-600 mt-2">Thank you for ordering from Share Tea.</p>
+        <p className="text-gray-600 mt-2">Thank you for ordering from Sharetea.</p>
         <Button className="mt-6" onClick={() => setPhase("browsing")}>
           Back to Menu
         </Button>
@@ -410,7 +436,22 @@ export default function CustomerKiosk({ user }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-amber-50 relative">
-      <div id="google_translate_element" className="hidden" aria-hidden="true" />
+      {/* Translator container: visible to Google, invisible to users */}
+      <div
+        id="google_translate_element"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          opacity: 0,
+          pointerEvents: "none",
+          height: 0,
+          width: 0,
+          overflow: "hidden",
+        }}
+        aria-hidden="true"
+      />
+
       <div className="pointer-events-none absolute inset-0 z-0">
         <div className="pointer-events-none absolute -top-32 -right-16 w-80 h-80 bg-pink-200/40 blur-[120px]" />
         <div className="pointer-events-none absolute top-40 -left-10 w-72 h-72 bg-amber-200/40 blur-[120px]" />
@@ -425,20 +466,25 @@ export default function CustomerKiosk({ user }) {
           paddingInline: "clamp(24px, 5vw, 72px)",
         }}
       >
+        {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-8 mb-12">
           <div className="space-y-4">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-pink-500 shadow">
-              Share Tea
+              Sharetea
               <span className="h-1 w-1 rounded-full bg-pink-400" />
               Fresh Daily
             </span>
             <div className="space-y-2">
-              <h1 className="text-4xl md:text-5xl font-black text-slate-800">Share Tea Kiosk</h1>
-              <p className="text-slate-500 text-lg">Handcrafted milk teas, toppings on tap, and a smoother kiosk flow.</p>
+              <h1 className="text-4xl md:text-5xl font-black text-slate-800">Sharetea Kiosk</h1>
+              <p className="text-slate-500 text-lg">
+                Handcrafted milk teas, toppings on tap, and a smoother kiosk flow.
+              </p>
             </div>
             {error && <p className="text-sm text-amber-600">{error}</p>}
           </div>
+
           <div className="flex flex-col gap-4 w-full md:w-auto md:items-end">
+            {/* Language card */}
             <div className="rounded-3xl border border-white/60 bg-white/80 px-6 py-4 shadow-lg backdrop-blur">
               <p className="text-xs uppercase tracking-widest text-slate-400">Language</p>
               <p className="text-sm text-slate-500 mt-1">Translate the kiosk into your preferred language.</p>
@@ -453,21 +499,26 @@ export default function CustomerKiosk({ user }) {
                   onChange={(e) => changeLanguage(e.target.value)}
                   disabled={!translatorReady}
                 >
-                  {languages.map((lang) => (
+                  {LANGUAGES.map((lang) => (
                     <option key={lang.code} value={lang.code} className="notranslate">
                       {lang.label}
                     </option>
                   ))}
                 </select>
-
               </div>
-              {!translatorReady && <p className="mt-2 text-xs text-amber-600">Loading Google Translate…</p>}
+              {!translatorReady && (
+                <p className="mt-2 text-xs text-amber-600">Loading Google Translate…</p>
+              )}
             </div>
+
+            {/* Rewards card */}
             <div className="rounded-3xl border border-white/60 bg-white/80 px-6 py-4 shadow-lg backdrop-blur w-full md:w-[320px]">
               <p className="text-xs uppercase tracking-widest text-slate-400">Rewards</p>
               {user?.email ? (
                 <>
-                  <p className="text-sm text-slate-500 mt-1">Earn points on every order and redeem for discounts.</p>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Earn points on every order and redeem for discounts.
+                  </p>
                   <div className="mt-3 flex items-center justify-between">
                     <div>
                       <p className="text-xl font-bold text-slate-800">
@@ -478,7 +529,7 @@ export default function CustomerKiosk({ user }) {
                       </p>
                     </div>
                     <Button
-                    className="px-3 py-2 text-sm"
+                      className="px-3 py-2 text-sm"
                       onClick={goToRewards}
                       disabled={!customerId || loyaltyLoading}
                     >
@@ -496,6 +547,8 @@ export default function CustomerKiosk({ user }) {
               )}
               {loyaltyError && <p className="mt-2 text-xs text-amber-600">{loyaltyError}</p>}
             </div>
+
+            {/* Cart summary button */}
             <button
               type="button"
               onClick={() => (cart.length ? setPhase("checkout") : null)}
@@ -524,13 +577,14 @@ export default function CustomerKiosk({ user }) {
                   {itemCount} item{itemCount === 1 ? "" : "s"}
                 </p>
                 <p className={`text-sm ${cart.length ? "text-white/90" : "text-slate-500"}`}>
-                  ${total.toFixed(2)} • Tap to review
+                  ${subtotal.toFixed(2)} • Tap to review
                 </p>
               </div>
             </button>
           </div>
         </header>
 
+        {/* Browsing phase */}
         {phase === "browsing" && (
           <>
             <div className="mb-8 flex flex-wrap items-center gap-3">
@@ -555,7 +609,10 @@ export default function CustomerKiosk({ user }) {
             <div className="grid w-full gap-8 lg:gap-10 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
               {loading
                 ? Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="h-64 rounded-2xl bg-white shadow relative overflow-hidden">
+                    <div
+                      key={i}
+                      className="h-64 rounded-2xl bg-white shadow relative overflow-hidden"
+                    >
                       <div className="absolute inset-0 animate-pulse">
                         <div className="h-32 bg-gray-200" />
                         <div className="p-4 space-y-2">
@@ -580,7 +637,6 @@ export default function CustomerKiosk({ user }) {
                       }}
                       className="relative h-full overflow-hidden border border-white/60 bg-white/80 shadow-lg backdrop-blur rounded-3xl transition duration-300 hover:-translate-y-2 hover:shadow-2xl cursor-pointer"
                     >
-                      {/* Image */}
                       <img
                         src={getItemImage(item.name)}
                         alt={item.name}
@@ -588,15 +644,25 @@ export default function CustomerKiosk({ user }) {
                       />
                       <CardContent className="relative flex h-full flex-col gap-4 text-left select-text">
                         <div className="space-y-2">
-                          <p className="text-[11px] tracking-[0.3em] text-pink-400 font-semibold">{item.category || "Drink"}</p>
+                          <p className="text-[11px] tracking-[0.3em] text-pink-400 font-semibold">
+                            {item.category || "Drink"}
+                          </p>
                           <h3 className="text-2xl font-semibold text-slate-800" title={item.name}>
                             {item.name}
                           </h3>
-                          {item.description && <p className="text-sm text-slate-500 max-h-16 overflow-hidden">{item.description}</p>}
+                          {item.description && (
+                            <p className="text-sm text-slate-500 max-h-16 overflow-hidden">
+                              {item.description}
+                            </p>
+                          )}
                         </div>
                         <div className="mt-auto flex items-center justify-between">
-                          <p className="text-2xl font-bold text-slate-800">${Number(item.price || 0).toFixed(2)}</p>
-                          <span className="text-sm font-semibold text-pink-500">Tap to customize</span>
+                          <p className="text-2xl font-bold text-slate-800">
+                            ${Number(item.price || 0).toFixed(2)}
+                          </p>
+                          <span className="text-sm font-semibold text-pink-500">
+                            Tap to customize
+                          </span>
                         </div>
                       </CardContent>
                     </Card>
@@ -607,78 +673,29 @@ export default function CustomerKiosk({ user }) {
               <div className="sticky bottom-4 mt-10 flex justify-end">
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                   <Button onClick={() => setPhase("checkout")} className="shadow-lg">
-                    Checkout • {itemCount} • ${total.toFixed(2)}
+                    Checkout • {itemCount} • ${subtotal.toFixed(2)}
                   </Button>
                 </motion.div>
               </div>
             )}
           </>
         )}
-        
+
+        {/* Checkout phase */}
         {phase === "checkout" && (() => {
           const SALES_TAX_RATE = 0.0825;
+          const tax = subtotalWithDiscount * SALES_TAX_RATE;
+          const totalDue = subtotalWithDiscount + tax;
 
-          // Calculate subtotal safely
-          let subtotal = 0;
-          cart.forEach((item) => {
-            const itemTotal = perItemTotal(item) || 0;
-            const qty = item.qty || 0;
-            subtotal += itemTotal * qty;
-          });
-
-          // Calculate tax and total
-          const tax = subtotal * SALES_TAX_RATE;
-          const total = subtotal + tax;
-          const totalDue = Math.max(total - (appliedDiscount || 0), 0);
-
-          // Format numbers for display
           const displaySubtotal = subtotal.toFixed(2);
+          const displayDiscount = appliedDiscount.toFixed(2);
           const displayTax = tax.toFixed(2);
           const displayTotalDue = totalDue.toFixed(2);
 
-          // Place order including employee_id: 16
           const handlePlaceOrder = async () => {
-            if (!cart.length) return;
-            setPlacingOrder(true);
-
-            try {
-              // Flatten drinks + toppings
-              const flattenedItems = cart.flatMap(item => {
-                const drinkItem = { item_id: item.id, quantity: item.qty };
-                const toppingItems = item.toppings?.map(t => ({
-                  item_id: t.id,
-                  quantity: t.qty ?? 1
-                })) || [];
-                return [drinkItem, ...toppingItems];
-              });
-
-              const orderPayload = {
-                employee_id: 16,      // Backend expects snake_case
-                items: flattenedItems // Now includes toppings too
-              };
-
-              console.log("Submitting order payload:", orderPayload);
-
-              await submitOrder(orderPayload);
-
-              if (customerId) {
-                const res = await earnLoyaltyPoints(customerId, totalDue, "Kiosk order");
-                setLoyalty(res.account || loyalty);
-                await refreshLoyalty();
-              }
-
-              setCart([]);
-              resetDiscounts();
-              setPhase("confirmed");
-
-            } catch (err) {
-              console.error("ORDER ERROR:", err);
-              setError("Order failed or loyalty points failed.");
-              setPhase("confirmed");
-            } finally {
-              setPlacingOrder(false);
-            }
+            await placeOrderAndLoyalty(totalDue);
           };
+
           return (
             <motion.div
               initial={{ opacity: 0, y: 50 }}
@@ -700,10 +717,17 @@ export default function CustomerKiosk({ user }) {
                   <div key={item.key} className="flex justify-between items-center py-3">
                     <div>
                       <h3 className="font-semibold">{item.name}</h3>
-                      <p className="text-gray-500">${perItemTotal(item).toFixed(2)} each</p>
+                      <p className="text-gray-500">
+                        ${perItemTotal(item).toFixed(2)} each
+                      </p>
                       {item.toppings?.length > 0 && (
                         <p className="text-xs text-gray-400">
-                          + {item.toppings.map((t) => `${t.name} (${t.price ? `$${Number(t.price).toFixed(2)}` : "included"})`).join(", ")}
+                          +{" "}
+                          {item.toppings
+                            .map((t) =>
+                              `${t.name} (${t.price ? `$${Number(t.price).toFixed(2)}` : "included"})`
+                            )
+                            .join(", ")}
                         </p>
                       )}
                       <p className="text-xs text-gray-400">
@@ -711,11 +735,17 @@ export default function CustomerKiosk({ user }) {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button className="px-2 py-2 rounded-lg bg-gray-100" onClick={() => updateQty(item.key, -1)}>
+                      <button
+                        className="px-2 py-2 rounded-lg bg-gray-100"
+                        onClick={() => updateQty(item.key, -1)}
+                      >
                         <Minus className="w-4 h-4" />
                       </button>
                       <span className="w-6 text-center">{item.qty}</span>
-                      <button className="px-2 py-2 rounded-lg bg-gray-100" onClick={() => updateQty(item.key, 1)}>
+                      <button
+                        className="px-2 py-2 rounded-lg bg-gray-100"
+                        onClick={() => updateQty(item.key, 1)}
+                      >
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
@@ -729,7 +759,7 @@ export default function CustomerKiosk({ user }) {
                     <h3 className="text-lg font-bold">Subtotal: ${displaySubtotal}</h3>
                     {appliedDiscount > 0 && (
                       <p className="text-sm text-green-600">
-                        Rewards discount: -${roundDown(appliedDiscount).toFixed(2)} ({rewardsUsed} used)
+                        Rewards discount: -${displayDiscount} ({rewardsUsed} used)
                       </p>
                     )}
                     <p className="text-lg font-bold mt-1">Tax: ${displayTax}</p>
@@ -744,7 +774,10 @@ export default function CustomerKiosk({ user }) {
                     >
                       Use Rewards
                     </Button>
-                    <Button className="bg-gray-400 hover:bg-gray-500" onClick={() => setPhase("browsing")}>
+                    <Button
+                      className="bg-gray-400 hover:bg-gray-500"
+                      onClick={() => setPhase("browsing")}
+                    >
                       Keep Browsing
                     </Button>
                     <Button onClick={handlePlaceOrder} disabled={placingOrder}>
@@ -757,8 +790,13 @@ export default function CustomerKiosk({ user }) {
           );
         })()}
 
+        {/* Rewards phase */}
         {phase === "rewards" && (
-          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} className="bg-white shadow-lg rounded-2xl p-6 mt-6">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white shadow-lg rounded-2xl p-6 mt-6"
+          >
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-2xl font-semibold">Use your points</h2>
@@ -770,14 +808,22 @@ export default function CustomerKiosk({ user }) {
             </div>
 
             {!customerId && (
-              <p className="mt-4 text-sm text-amber-700">Sign in to access loyalty rewards.</p>
+              <p className="mt-4 text-sm text-amber-700">
+                Sign in to access loyalty rewards.
+              </p>
             )}
 
             {customerId && (
               <div className="mt-4 space-y-3">
                 <p className="text-sm text-slate-700">
-                  Balance: <span className="font-semibold">{loyalty?.points_balance ?? 0} pts</span> • Rewards available:{" "}
-                  <span className="font-semibold">{loyalty?.rewards_available ?? 0}</span>
+                  Balance:{" "}
+                  <span className="font-semibold">
+                    {loyalty?.points_balance ?? 0} pts
+                  </span>{" "}
+                  • Rewards available:{" "}
+                  <span className="font-semibold">
+                    {loyalty?.rewards_available ?? 0}
+                  </span>
                 </p>
                 <div className="flex items-center gap-3">
                   <label className="text-sm text-slate-700" htmlFor="reward-count">
@@ -794,25 +840,34 @@ export default function CustomerKiosk({ user }) {
                   />
                   <Button
                     className="bg-white text-pink-500 border border-pink-200 hover:bg-pink-50"
-                    onClick={() => setRedeemCount(Math.max(1, loyalty?.rewards_available || 1))}
+                    onClick={() =>
+                      setRedeemCount(Math.max(1, loyalty?.rewards_available || 1))
+                    }
                     disabled={!loyalty?.rewards_available}
                   >
                     Use Max
                   </Button>
                 </div>
                 <p className="text-sm text-slate-600">
-                  Est. discount: ${((loyalty?.reward_value || 0) * (redeemCount || 0)).toFixed(2)}
+                  Est. discount: $
+                  {((loyalty?.reward_value || 0) * (redeemCount || 0)).toFixed(2)}
                 </p>
                 <p className="text-sm text-slate-500">
-                  Subtotal: ${total.toFixed(2)} • Current discount: ${appliedDiscount.toFixed(2)}
+                  Subtotal: ${subtotal.toFixed(2)} • Current discount: $
+                  {appliedDiscount.toFixed(2)}
                 </p>
               </div>
             )}
 
-            {loyaltyError && <p className="mt-3 text-xs text-amber-600">{loyaltyError}</p>}
+            {loyaltyError && (
+              <p className="mt-3 text-xs text-amber-600">{loyaltyError}</p>
+            )}
 
             <div className="flex justify-end gap-3 mt-6">
-              <Button className="bg-gray-200 text-gray-700 hover:bg-gray-300" onClick={() => setPhase("checkout")}>
+              <Button
+                className="bg-gray-200 text-gray-700 hover:bg-gray-300"
+                onClick={() => setPhase("checkout")}
+              >
                 Back to Checkout
               </Button>
               <Button onClick={handleRedeemRewards} disabled={redeeming || !customerId}>
@@ -821,6 +876,8 @@ export default function CustomerKiosk({ user }) {
             </div>
           </motion.div>
         )}
+
+        {/* Customizing phase */}
         {phase === "customizing" && selectedDrink && (
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -830,19 +887,23 @@ export default function CustomerKiosk({ user }) {
             <div className="flex flex-col lg:flex-row items-start gap-8">
               <div className="flex-1 min-w-[240px] space-y-2">
                 <div className="flex flex-col lg:flex-row gap-6">
-                  {/* Text section */}
                   <div className="flex-1 space-y-2">
                     <p className="text-xs uppercase tracking-[0.4em] text-pink-500 font-semibold">
                       {selectedDrink.category || "Drink"}
                     </p>
-                    <h2 className="text-3xl font-bold text-slate-900">{selectedDrink.name}</h2>
-                    <p className="text-lg text-gray-500">${Number(selectedDrink.price || 0).toFixed(2)}</p>
+                    <h2 className="text-3xl font-bold text-slate-900">
+                      {selectedDrink.name}
+                    </h2>
+                    <p className="text-lg text-gray-500">
+                      ${Number(selectedDrink.price || 0).toFixed(2)}
+                    </p>
                     {selectedDrink.description && (
-                      <p className="text-base text-gray-600">{selectedDrink.description}</p>
+                      <p className="text-base text-gray-600">
+                        {selectedDrink.description}
+                      </p>
                     )}
                   </div>
 
-                  {/* Image section */}
                   <div className="flex-shrink-0 w-3/12 lg:w-1/6">
                     <img
                       src={getItemImage(selectedDrink.name)}
@@ -853,19 +914,29 @@ export default function CustomerKiosk({ user }) {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Button className="bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-none" onClick={closeCustomizer}>
+                <Button
+                  className="bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-none"
+                  onClick={closeCustomizer}
+                >
                   Back
                 </Button>
-                <button className="text-gray-400 hover:text-gray-600 p-2" onClick={closeCustomizer} aria-label="Close customizer">
+                <button
+                  className="text-gray-400 hover:text-gray-600 p-2"
+                  onClick={closeCustomizer}
+                  aria-label="Close customizer"
+                >
                   <X />
                 </button>
               </div>
             </div>
 
             {selectedDrink.description && (
-              <p className="text-base leading-relaxed text-gray-600">{selectedDrink.description}</p>
+              <p className="text-base leading-relaxed text-gray-600">
+                {selectedDrink.description}
+              </p>
             )}
-            {/* ICE LEVEL */}
+
+            {/* Ice level */}
             <section className="space-y-3">
               <p className="text-sm font-semibold text-gray-700">Ice Level</p>
               <div className="flex flex-wrap gap-3">
@@ -885,7 +956,7 @@ export default function CustomerKiosk({ user }) {
               </div>
             </section>
 
-            {/* SUGAR LEVEL */}
+            {/* Sugar level */}
             <section className="space-y-3 mt-6">
               <p className="text-sm font-semibold text-gray-700">Sugar Level</p>
               <div className="flex flex-wrap gap-3">
@@ -904,11 +975,16 @@ export default function CustomerKiosk({ user }) {
                 ))}
               </div>
             </section>
+
+            {/* Toppings */}
             {toppings.length > 0 && (
               <section className="space-y-5">
                 <div className="flex flex-col gap-1">
                   <p className="text-sm font-semibold text-gray-700">Add toppings</p>
-                  <p className="text-xs text-gray-400">Tap any topping to toggle it. Active toppings get a checkmark and appear below.</p>
+                  <p className="text-xs text-gray-400">
+                    Tap any topping to toggle it. Active toppings get a checkmark and appear
+                    below.
+                  </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {toppings.map((topping) => {
@@ -918,19 +994,19 @@ export default function CustomerKiosk({ user }) {
                         key={topping.id}
                         onClick={() => toggleTopping(topping)}
                         aria-pressed={active}
-                        className={`
-                          group border-2 px-5 py-4 text-left transition 
-                          ${active
+                        className={`group border-2 px-5 py-4 text-left transition ${
+                          active
                             ? "border-pink-500 bg-pink-50 text-pink-600 shadow-[0_0_0_2px_rgba(236,72,153,0.2)]"
                             : "border-slate-200 bg-white hover:border-pink-200"
-                          }
-                        `}
+                        }`}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="font-semibold text-base">{topping.name}</p>
                             <p className="text-sm text-gray-500">
-                              {topping.price ? `+$${Number(topping.price).toFixed(2)}` : "Included"}
+                              {topping.price
+                                ? `+$${Number(topping.price).toFixed(2)}`
+                                : "Included"}
                             </p>
                           </div>
                           {active && (
@@ -946,7 +1022,9 @@ export default function CustomerKiosk({ user }) {
                 </div>
 
                 <div className="pt-2">
-                  <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Selected toppings</p>
+                  <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
+                    Selected toppings
+                  </p>
                   {selectedToppings.length ? (
                     <div className="mt-2 flex flex-wrap gap-2">
                       {selectedToppings.map((topping) => (
@@ -966,7 +1044,10 @@ export default function CustomerKiosk({ user }) {
             )}
 
             <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-100">
-              <Button className="flex-1 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-none" onClick={closeCustomizer}>
+              <Button
+                className="flex-1 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-none"
+                onClick={closeCustomizer}
+              >
                 Cancel
               </Button>
               <Button className="flex-1 rounded-none" onClick={addSelectionToCart}>
