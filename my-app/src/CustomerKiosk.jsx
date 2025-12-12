@@ -62,43 +62,55 @@ const getItemImage = (name) => {
   return itemImages[key] || fallbackImage;
 };
 
-const ensureGoogleTranslate = () => {
-  if (typeof window === "undefined") return;
+const GOOGLE_TRANSLATE_SCRIPT_ID = "google-translate-script";
+const GOOGLE_COOKIE = "googtrans";
 
-  if (!window.__gt_initialized) {
-    window.__gt_initialized = false;
+const getSavedLanguage = () => {
+  if (typeof document === "undefined") return "en";
+
+  const cookie = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(`${GOOGLE_COOKIE}=`));
+
+  if (cookie) {
+    const value = cookie.split("=")[1]; // /en/es
+    const parts = value.split("/");
+    if (parts[2]) return parts[2];
   }
 
-  const initialize = () => {
-    if (window.__gt_initialized) return;
-    if (!window.google || !window.google.translate || !window.google.translate.TranslateElement) return;
-
-    new window.google.translate.TranslateElement(
-      {
-        pageLanguage: "en",
-        includedLanguages: LANGUAGES.map((l) => l.code).join(","),
-        autoDisplay: false,
-      },
-      "google_translate_element"
-    );
-
-    window.__gt_initialized = true;
-  };
-
-  if (window.google && window.google.translate && window.google.translate.TranslateElement) {
-    initialize();
-    return;
+  try {
+    const stored = localStorage.getItem("kioskLanguage");
+    if (stored) return stored;
+  } catch {
+    // ignore storage errors
   }
 
-  window.googleTranslateElementInit = initialize;
+  return "en";
+};
 
-  if (!document.getElementById("google-translate-script")) {
-    const script = document.createElement("script");
-    script.id = "google-translate-script";
-    script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-    script.async = true;
-    document.body.appendChild(script);
+const persistLanguage = (lang) => {
+  if (typeof document === "undefined") return;
+
+  const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+  document.cookie = `${GOOGLE_COOKIE}=/en/${lang}; expires=${expires}; path=/`;
+
+  try {
+    localStorage.setItem("kioskLanguage", lang);
+  } catch {
+    // ignore storage errors
   }
+};
+
+const applyLanguageToGoogle = (lang) => {
+  const select = document.querySelector("select.goog-te-combo");
+  if (!select) return false;
+
+  if (select.value !== lang) {
+    select.value = lang;
+  }
+
+  select.dispatchEvent(new Event("change"));
+  return true;
 };
 
 export default function CustomerKiosk({ user }) {
@@ -196,40 +208,75 @@ export default function CustomerKiosk({ user }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    if (window.__gtInitialized) return;
-    window.__gtInitialized = true;
+    let mounted = true;
+    let poll;
+    const savedLanguage = getSavedLanguage();
+    setCurrentLanguage(savedLanguage);
 
-    window.googleTranslateElementInit = () => {
-      new window.google.translate.TranslateElement(
-        {
-          pageLanguage: "en",
-          includedLanguages: LANGUAGES.map(l => l.code).join(","),
-          autoDisplay: false,
-        },
-        "google_translate_element"
-      );
+    const startPollingForTranslator = () => {
+      const check = () => {
+        const select = document.querySelector("select.goog-te-combo");
+        if (select) {
+          setTranslatorReady(true);
+          applyLanguageToGoogle(savedLanguage);
+          return true;
+        }
+        return false;
+      };
+
+      if (check()) return;
+
+      poll = window.setInterval(() => {
+        if (!mounted) return;
+        if (check()) {
+          clearInterval(poll);
+        }
+      }, 300);
     };
 
-    const scriptId = "google-translate-script";
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement("script");
-      script.id = scriptId;
-      script.src =
-        "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-      script.async = true;
-      document.body.appendChild(script);
+    window.googleTranslateElementInit = () => {
+      if (!mounted) return;
+      if (!window.__gtTranslator && window.google?.translate?.TranslateElement) {
+        window.__gtTranslator = new window.google.translate.TranslateElement(
+          {
+            pageLanguage: "en",
+            includedLanguages: LANGUAGES.map((l) => l.code).join(","),
+            autoDisplay: false,
+          },
+          "google_translate_element"
+        );
+      }
+      startPollingForTranslator();
+    };
+
+    if (window.google?.translate?.TranslateElement) {
+      window.googleTranslateElementInit();
+    } else {
+      const existingScript = document.getElementById(GOOGLE_TRANSLATE_SCRIPT_ID);
+      if (!existingScript) {
+        const script = document.createElement("script");
+        script.id = GOOGLE_TRANSLATE_SCRIPT_ID;
+        script.src =
+          "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+        script.async = true;
+        document.body.appendChild(script);
+      } else {
+        existingScript.addEventListener("load", window.googleTranslateElementInit, {
+          once: true,
+        });
+      }
     }
 
-    const interval = setInterval(() => {
-      const select = document.querySelector("select.goog-te-combo");
-      if (select) {
-        setTranslatorReady(true);
-        clearInterval(interval);
-      }
-    }, 300);
-
-    return () => clearInterval(interval);
+    return () => {
+      mounted = false;
+      if (poll) clearInterval(poll);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!translatorReady) return;
+    applyLanguageToGoogle(currentLanguage);
+  }, [translatorReady, currentLanguage]);
 
 
   const drinks = useMemo(() => items.filter((it) => !it.isTopping), [items]);
@@ -318,15 +365,8 @@ export default function CustomerKiosk({ user }) {
 
   const changeLanguage = (lang) => {
     setCurrentLanguage(lang);
-
-    const select = document.querySelector("select.goog-te-combo");
-    if (!select) return;
-
-    select.value = lang;
-
-    const event = document.createEvent("HTMLEvents");
-    event.initEvent("change", true, true);
-    select.dispatchEvent(event);
+    persistLanguage(lang);
+    applyLanguageToGoogle(lang);
   };
 
   const goToRewards = () => {
