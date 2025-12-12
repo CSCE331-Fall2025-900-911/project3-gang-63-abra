@@ -182,6 +182,14 @@ function App() {
               {(weather.main.temp * 9/5 + 32).toFixed(1)}°F - {weather.weather[0].main}
             </button>
           )}
+          {user?.email && (
+            <div className="account-section">
+              <span>{UI_STRINGS[language].signedInAs(user.email)}</span>
+              <button className="logout-btn" onClick={handleLogout}>
+                {UI_STRINGS[language].signOut}
+              </button>
+            </div>
+          )}
         </nav>
       );
     }
